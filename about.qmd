@@ -1,0 +1,50 @@
+---
+title: "Nicolas Palominos"
+image: profile.jpg
+about:
+  template: trestles
+  links:
+    - icon: twitter
+      text: Twitter
+      href: https://twitter.com/npalomin
+    - icon: linkedin
+      text: LinkedIn
+      href: https://www.linkedin.com/in/npalominos
+    - icon: github
+      text: Github
+      href: https://github.com/npalomin
+    - icon: person-circle
+      text: Website
+      aria-label: website
+      href: https://npalomin.github.io/
+    - icon: orcid
+      text: Orcid
+      href: https://orcid.org/0000-0002-8713-7338
+---
+
+**Urban data scientist, city designer, planner, architect and innovator**
+
+I see myself in the face of the challenge of making better cities as both 'urban design researcher' and 'data scientist'. As an urban design researcher, I look for basic rules about how city systems work and relate to each other, which can direct us to understand cities as structures of organised complexity, constantly evolving and adapting. As a data scientist, I discover key information from complex data, using urban analytics tools.
+
+::: column-page
+## Education
+
+|                                                  |                                                 |                   |
+|----------------------------|----------------------------|-----------------|
+| University College London                        | PhD in Advanced Spatial Analysis                | 09.2016 - 05.2021 |
+| London School of Economics and Political Science | MSc in City Design and Social Science           | 09.2011 - 10.2012 |
+| P. Universidad Catolica de Chile                 | Title of Architect - Licentiate in Architecture | 03.1997 - 01.2004 |
+
+## Experience
+
+[selected roles, see 2 pages CV [here](https://github.com/npalomin/public/blob/master/nicolas_palominos_cv.pdf)]{style="font-size:14px;"}
+
+|                                                  |                                                        |                   |
+|--------------------------|-----------------------------|-----------------|
+| University College London                        | Associate Lecturer (Teaching) in Spatial Data Science. | 05.2021 - present |
+|                                                  | Research Fellow                                        | 12.2020 - 05.2021 |
+|                                                  | Doctoral Resarcher                                     | 09.2016 - 12.2020 |
+| LSE Cities                                       | Researcher                                             | 12.2011 - 10.2012 |
+| The Comptroller General of the Republic of Chile | Designer and Analyst                                   | 10.2009 - 08.2016 |
+| Ministry of Housing and Planning                 | Project Manager & Designer                             | 08.2006 - 08.2007 |
+:::

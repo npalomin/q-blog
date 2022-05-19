@@ -1,0 +1,529 @@
+---
+title: "Travel patterns in UK cities"
+subtitle: |
+  Active travel origin-destination data visualised across major urban areas in the UK
+author:
+  name: Nicolas Palominos
+citation: true
+date: "2022-05"
+date-format: "MMMM, YYYY"
+categories: [r, od data]
+image: "image.png"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    toc-title: Contents
+    toc-location: left
+---
+
+<!--------------- post ----------------->
+
+### What are the active travel patterns in the UK?
+
+By visualising a large quantity of travel data we can observe the spatial patterns of different cities[^1].
+
+[^1]: A version of this exercise was featured in the twitter feed of [R posts you might have missed!](https://twitter.com/icymi_r/status/1461532249921368064?s=20&t=TfGwbEICE13mdSCbwDfNcQ)
+
+Provided that travel behaviour is associated with the distance to potentially attractive destinations and that cycling in particular can be sensible not only to distance but also to the quality of cycling infrastructure, the visualisation of cycling flows can reveal interesting patterns of urban morphology. This is particularly relevant for identifying city and neighbourhood level urban adaptations and strategies that can promote more energy and space-efficient modes of travel and contribute to achieving net-zero cities.
+
+This exercise uses origin-destination data that captures the number of trips by mode between census areas in the UK.
+
+### Prerequisites
+
+The following packages are necessary to run the code.
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(pct)
+library(stplanr)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(extrafont)
+library(patchwork)
+```
+
+```{r}
+#| echo: false
+#install.packages('devtools')
+#devtools::install_github('r-lib/systemfonts')
+#install.packages("kableExtra")
+library(kableExtra)
+library(magick)
+library(gridExtra)
+#install.packages("png")
+library(png)
+```
+
+### Reading the data
+
+Origin-destination data is obtained from the R package `pct`[^2]. This code will download all 'flows' data, the centroids of census areas (MSOAs) and PCT defined regions.
+
+[^2]: See the [Propensity to Cycle Tool](https://itsleeds.github.io/pct/) project website
+
+```{r}
+# Get origin destination data from the 2011 Census
+# ref: https://www.rdocumentation.org/packages/pct/versions/0.9.1/topics/get_od
+flows <- get_od(
+  region = NULL,
+  n = NULL,
+  type = "within",
+  omit_intrazonal = FALSE,
+  base_url = paste0("https://s3-eu-west-1.amazonaws.com/",
+    "statistics.digitalresources.jisc.ac.uk", "/dkan/files/FLOW/"),
+  filename = "wu03ew_v2",
+  u = NULL
+)
+# Download MSOA centroids for England and Wales
+nodes <- get_centroids_ew() 
+# Download regions (pct defined regions)
+regions <- pct_regions
+```
+
+### Bicycle flows
+
+To filter (slice) flows by mode we follow a standard tidyverse workflow in R that selects unique origins and destinations from the flows and nodes data. The function `od2line` converts the filtered flows and nodes data into an `sf` object.
+
+```{r}
+flows %>%
+  filter(bicycle > 0) %>%
+  # remove O-D geo areas that are NA eg. not MSOA
+  filter(!is.na(geo_name2)) -> flows_bike
+# create sf with unique nodes
+x1 <- flows_bike$geo_code1 %>%
+  unique() %>%
+  as.data.frame()
+x2 <- flows_bike$geo_code2 %>%
+  unique() %>%
+  as.data.frame()
+bind_rows(x1, x2) %>%
+  unique() %>%
+  rename(nodes = ".") -> flows_nodes
+# filter by msoa code
+nodes %>%
+  filter(msoa11cd %in% flows_nodes$nodes) -> nodes_bike
+# Convert origin-destination data to sf lines (od2line {stplanr})
+bike_commute <- od2line(flows_bike, nodes_bike)
+```
+
+```{r}
+#| echo: false
+# join region data with sf
+regions %>%
+  st_transform(27700) -> regions
+# join pct regions
+bike_commute %>%
+  st_join(., regions, join = st_within) -> bike_commute_r
+# create bicycle count breaks (categories c1)
+bike_commute_r %>%
+  mutate(c1 = as.factor(bicycle)) -> bike_commute_r
+```
+
+```{r}
+#| echo: false
+# bike commute max and sum by region
+bike_commute_r %>%
+  st_drop_geometry() %>%
+  group_by(region_name) %>%
+  summarise(Total = sum(bicycle),
+            Maximum = max(bicycle),
+            # distinct values for colour palette
+            dv_br = n_distinct(bicycle)) %>%
+  arrange(desc(Total, Maximum)) -> suta
+
+suta %>%
+  filter(!is.na(region_name)) %>%
+  select(region_name, Total, Maximum) %>%
+  rename(Region = region_name) %>%
+  mutate(Region = str_to_title(Region)) -> suta1
+```
+
+The table shows the 6 regions with highest aggregated flows (Total) and the trips of the *desire line* with highest count (Maximum)
+
+```{r}
+#| echo: false
+#| tbl-cap: "Travel by Bicycle"
+head(suta1) %>%
+  kbl() %>%
+  kable_paper("hover", full_width = F)
+```
+
+```{r bbox}
+#| echo: false
+# selected regions considering aggregated bicycle flows
+suta %>%
+  select(region_name) %>%
+  filter(!is.na(region_name)) %>%
+  head() %>%
+  pull -> regl
+
+# get bounding boxes
+bx <- list()
+for (i in regl) {
+  bx[[i]] <- bike_commute_r %>% 
+    filter(region_name == i) %>%
+    st_bbox() %>%
+    st_as_sfc() %>%
+    st_sf()
+}
+
+bx1 <- do.call(rbind, bx) %>%
+  mutate(rn = regl) %>%
+  st_sf()
+```
+
+Regions with the higher number of trips by bicycle are highlighted below. Overall, it can be observed that this corresponds with University cities which would tend to have younger populations.
+
+```{r}
+#| echo: false
+#| include: false
+# plot regions to check largest study area
+bx1 %>%
+  ggplot() +
+  geom_sf(data = regions, lwd = 0.1) +
+  geom_sf(fill= NA, col= "tomato") + 
+  geom_sf_label(aes(label = str_to_title(rn)), size = 2.5, alpha=0.5, vjust = 0.5, hjust = 0, nudge_x = 10000, nudge_y = 5000) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+```
+
+```{r}
+#| echo: false
+#| include: false
+# largest bbox
+bike_commute_r %>% 
+    filter(region_name == "hampshire") %>%
+    st_bbox() -> hbbox
+
+# diagonal of bbox
+rbind(c(hbbox[1],hbbox[2]),c(hbbox[3],hbbox[4])) -> s1
+s1 %>%
+  st_linestring(.) %>%
+  st_cast("LINESTRING") %>%
+  st_sfc(., crs = 27700) %>%
+  st_sf(.) -> ls
+
+# half of diagonal is circle's radius
+st_length(ls) / 2
+```
+
+```{r}
+#| echo: false
+#| include: false
+# create a circle of radius = 50488.48 for each region
+for (i in regl) {
+  cf <- bx1 %>%
+    filter(rn == i) %>%
+    st_centroid(.) %>%
+    st_buffer(., dist = 50488.48) 
+  assign(paste("c", i, sep = "_"), cf)
+}
+```
+
+```{r dev.args = list(bg = 'transparent')}
+#| echo: false
+# plot regions and circles to check largest study area
+regions %>%
+  ggplot() +
+  geom_sf(lwd = 0.1) +
+  geom_sf(data = bx1, fill= NA, col= "gold") + 
+  geom_sf(data = c_avon, fill= NA, col= "#b7c4cd",lwd = 0.3) + 
+  geom_sf(data = c_london, fill= NA, col= "#b7c4cd", lwd = 0.3) +
+  geom_sf(data = c_oxfordshire, fill= NA, col= "#b7c4cd", lwd = 0.3) +
+  geom_sf(data = c_cambridgeshire, fill= NA, col= "#b7c4cd", lwd = 0.3) +
+  geom_sf(data = `c_greater-manchester`, fill= NA, col= "#b7c4cd", lwd = 0.3) +
+  geom_sf(data = c_hampshire, fill= NA, col= "#b7c4cd", lwd = 0.3) +
+  geom_sf_label(data = bx1, aes(label = str_to_title(rn)), size = 2.5, alpha=0.5, vjust = 0.5, hjust = 0, nudge_x = 10000, nudge_y = 5000) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+```
+
+```{r}
+#| echo: false
+
+# plot function
+# object filtered (region), palvalues (palette colour count from unique flow counts), rown (ranking)
+flow_plot <- function(filtered, palvalues, rown){
+  # create circle of radius X from biggest bbox
+  circle <- bike_commute_r %>%
+    filter(region_name == filtered) %>%
+    st_bbox() %>%
+    st_as_sfc() %>%
+    st_sf() %>%
+    st_centroid() %>%
+    st_buffer(., dist = 50488.48)
+
+  bike_commute_r %>%
+    filter(region_name == filtered) %>%
+    ggplot() +
+    geom_sf(aes(col = c1, size = c1), alpha = .2, show.legend = F) + 
+    geom_sf(data = circle, fill=NA, col=NA) +
+    scale_color_manual(values = colorRampPalette(c('#233423', 'green', 'white'))(palvalues)) +
+    scale_size_discrete(range = c(0.1, 0.7)) +
+    theme_void() +
+    theme(panel.background = element_rect(fill = '#2e3b43', colour = NA),
+          plot.background = element_rect(fill = '#2e3b43', colour = NA),
+          plot.title = element_text(color='green', size=18, family="AppleGothic", hjust = 0.5)) +
+    coord_sf(expand = FALSE) +
+    labs(title = str_to_title(filtered)) -> p
+  print(p)
+  ggsave(filename = paste0("bike_", rown, "_", filtered, ".png"), width = 4.24, height = 4.51, units = c("in"), dpi = 100)
+}
+```
+
+```{r}
+#| echo: false
+# build data frame to apply function
+suta %>%
+  filter(!is.na(region_name)) %>%
+  select(region_name, dv_br) %>%
+  rename(filtered = region_name,
+         palvalues = dv_br) %>%
+  mutate(rown = row.names(.)) -> kdf
+```
+
+```{r}
+#| echo: false
+#| include: false
+#flow_plot("greater-manchester", 39, 4)
+```
+
+```{r}
+#| echo: false
+#| include: false
+mapply(flow_plot, kdf[1:6,]$filtered, kdf[1:6,]$palvalues, kdf[1:6,]$rown)
+```
+
+Plotting each region side-by-side at the same scale allows to compare the different bicycle travel patterns. It is clear that London, for example, tends to be more monocentric than the other regions where more than one bicycle destination is highlighted. 
+
+```{r}
+#| echo: false
+#| include: false
+# make images' grid
+# read png starting with bike
+bikei <- list.files("~/Documents/Q_GitHub/q-blog/posts/uk-travel-patterns/", pattern = '^bike.+\\.png$')
+
+image_read(bikei) %>%
+  image_montage(tile = '3', geometry = "100%x100%+0+0") -> bgrid
+
+#image_info(bgrid)
+
+image_write(bgrid, path = "~/Documents/Q_GitHub/q-blog/posts/uk-travel-patterns/bgrid.png", format = "png")
+```
+
+:::{.column-page}
+![Regions with highest bicycle flows (cut-off square of ~100 kms)](bgrid.png)
+:::
+
+### Walking commute
+
+The same scripts can be used to visualise the patterns of people on-foot.
+
+```{r}
+#| echo: false
+flows %>%
+  filter(foot > 0) %>%
+  # remove O-D geo areas that are NA eg. not MSOA
+  filter(!is.na(geo_name2)) -> flows_foot
+# create sf with unique nodes
+x1 <- flows_foot$geo_code1 %>%
+  unique() %>%
+  as.data.frame()
+x2 <- flows_foot$geo_code2 %>%
+  unique() %>%
+  as.data.frame()
+bind_rows(x1, x2) %>%
+  unique() %>%
+  rename(nodes = ".") -> flows_nodes_f
+# filter by msoa code
+nodes %>%
+  filter(msoa11cd %in% flows_nodes_f$nodes) -> nodes_f
+# Convert origin-destination data to sf lines (od2line {stplanr})
+foot_commute <- od2line(flows_foot, nodes_f)
+```
+
+```{r}
+#| echo: false
+# join region data with sf
+regions %>%
+  st_transform(27700) -> regions
+# join pct regions
+foot_commute %>%
+  st_join(., regions, join = st_within) -> foot_commute_r
+# create bicycle count breaks (categories c1)
+foot_commute_r %>%
+  mutate(c1 = as.factor(foot)) -> foot_commute_r
+```
+
+```{r}
+#| echo: false
+# bike commute max and sum by region
+foot_commute_r %>%
+  st_drop_geometry() %>%
+  group_by(region_name) %>%
+  summarise(Total = sum(foot),
+            Maximum = max(foot),
+            # distinct values for colour palette
+            dv_br = n_distinct(foot)) %>%
+  arrange(desc(Total, Maximum)) -> suta_f
+
+suta_f %>%
+  filter(!is.na(region_name)) %>%
+  select(region_name, Total, Maximum) %>%
+  rename(Region = region_name) %>%
+  mutate(Region = str_to_title(Region)) -> suta1_f
+```
+
+We now observe a different set of regions, however, London and Greater Manchester are still at the top which is not surprising given that these are the most populated areas in the UK.
+
+```{r}
+#| echo: false
+#| tbl-cap: "Travel by Foot"
+head(suta1_f) %>%
+  kbl() %>%
+  kable_paper("hover", full_width = F)
+```
+
+
+```{r}
+#| echo: false
+#| include: false
+# plot function
+f_flow_plot <- function(filtered, palvalues, rown){
+  # select dl with highest flows
+  dl <- foot_commute_r %>%
+    filter(region_name == filtered) %>%
+    filter(foot == max(foot)) 
+  # create circle with centre at highest flow
+  circle <- dl %>%
+    st_centroid() %>%
+    st_buffer(., 10000)
+  
+  # bounding box
+  cbb <- circle %>%
+    st_bbox(.)
+  
+  # plot & save
+  foot_commute_r %>%
+    filter(region_name == filtered) %>%
+    ggplot() +
+    geom_sf(aes(col = c1, size = c1), alpha = .2, show.legend = F) + 
+    geom_sf(data = circle, fill=NA, col=NA) +
+    scale_color_manual(values = colorRampPalette(c('#233423', 'magenta1', 'white'))(palvalues)) +
+    scale_size_discrete(range = c(0.1, 0.7)) +
+    theme_void() +
+    theme(panel.background = element_rect(fill = '#2e3b43', colour = NA),
+          plot.background = element_rect(fill = '#2e3b43', colour = NA),
+          plot.title = element_text(color='magenta1', size=18, family="AppleGothic", hjust = 0.5),
+          plot.subtitle = element_text(color='magenta1', size=14, family="AppleGothic", hjust=0.5)) +
+    # zoom-in defined by cbb (boundin box)
+    coord_sf(expand = FALSE, xlim = c(cbb[1], cbb[3]), ylim = c(cbb[2], cbb[4]), datum = 27700) +
+    labs(title = str_to_title(filtered), subtitle = paste0(round(st_length(dl),0), " m")) -> p
+  print(p)
+  ggsave(filename = paste0("foot_", rown, "_", filtered, ".png"), width = 3.92, height = 4.50, units = c("in"), dpi = 100)
+}
+```
+
+```{r}
+#| echo: false
+#| include: false
+#f_flow_plot("greater-manchester", 158, 5)
+```
+
+```{r}
+#| echo: false
+# build data frame to apply function
+suta_f %>%
+  filter(!is.na(region_name)) %>%
+  arrange(desc(Total)) %>%
+  select(region_name, dv_br) %>%
+  rename(filtered = region_name,
+         palvalues = dv_br) %>%
+  mutate(rown =  row.names(.))-> kdf_f
+```
+
+```{r}
+#| echo: false
+#| include: false
+mapply(f_flow_plot, kdf_f[1:6,]$filtered, kdf_f[1:6,]$palvalues, kdf_f[1:6,]$rown)
+```
+
+```{r}
+#| echo: false
+#| include: false
+# read png starting with bike
+footi <- list.files("~/Documents/Q_GitHub/q-blog/posts/uk-travel-patterns/", pattern = '^foot.+\\.png$')
+
+image_read(footi) %>%
+  image_montage(tile = '3', geometry = "100%x100%+0+0") -> fgrid
+
+#image_info(bgrid)
+
+image_write(fgrid, path = "~/Documents/Q_GitHub/q-blog/posts/uk-travel-patterns/fgrid.png", format = "png")
+```
+
+:::{.column-page}
+![Foot flows for 6 top cities centred at the _desire line_ with highest count](fgrid.png)
+:::
+
+```{r}
+#| echo: false
+#| include: false
+kdf_f$filtered[1:6] -> f_reg
+```
+
+```{r}
+#| echo: false
+#| include: false
+# get bounding boxes
+bxf <- list()
+for (i in f_reg) {
+  bxf[[i]] <- foot_commute_r %>% 
+    filter(region_name == i) %>%
+    filter(foot == max(foot)) %>%
+    st_centroid() %>%
+    st_buffer(., 10000) %>%
+    st_bbox() %>%
+    st_as_sfc() %>%
+    st_sf()
+}
+
+bxf1 <- do.call(rbind, bxf) %>%
+  # create region name
+  mutate(rn = f_reg) %>%
+  st_sf()
+```
+
+When comparing areas with highest bicycle and foot flows it is interesting to note that only London and Manchester have high number of trips for both modes. High performing cities at walking commute that could have the potential to increase bicycle trips are Leeds, Cardiff, Birmingham and Newcastle. From the walking flows it is possible to observe that there is quite a big variation in the length of the _desire line_ with highest flow count (subtitle), varying from 2435 m in London to 772 m in Wales (Cardiff).
+
+```{r dev.args = list(bg = 'transparent')}
+#| echo: false
+# plot regions to check largest study area
+bxf1 %>%
+  ggplot() +
+  geom_sf(data = regions, lwd = 0.1) +
+  geom_sf(fill= NA, col= "tomato") + 
+  geom_sf_label(aes(label = str_to_title(rn)), size = 2.5, alpha=0.5, vjust = 1, hjust = 0, nudge_x = 10000, nudge_y = -5000) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+```
+
+### Future points
+
+As an illustration the bicycle flows plot contains ~300k origin-destination lines. Often, this kind of plots tend to get cluttered making it difficult to identify meaningful patterns (the total number of links between n set of nodes is n(n-1)/2). An important contribution of this graphic is that it can provide a synoptic comparative view of flow patterns that relate to the morphology of cities. Additional quantitative analysis could be done by calculating the centrality degree distribution of the studied areas to investigate how the number of connections vary across origins and destinations.
+
+Moreover, the code in this exercise can be adapted to investigate other patterns by mode of travel or include other parameters such as travel by age groups (see data in UK Data Service[^3]). Additionally, instead of highlighting the areas with high density of active travel flows, this approach could be used to identify areas where there could be a modal shift from car travel to active travel. 
+
+[^3]: See [UK Data Service](https://statistics.ukdataservice.ac.uk/dataset/wu03ew-2011-msoamsoa-location-usual-residence-and-place-work-method-travel-work)
+
+```{r}
+#| echo: false
+#st_write(bxf1 , "foot_cities.kml", driver = "kml")
+```
+
+
+

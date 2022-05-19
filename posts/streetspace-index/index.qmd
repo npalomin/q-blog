@@ -1,0 +1,520 @@
+---
+title: "A street design index from streetspace allocation metrics"
+subtitle: |
+  How can pavement and carriageway widths explain street design?
+author:
+  name: Nicolas Palominos
+citation: true
+date: "2022-05"
+date-format: "MMMM, YYYY"
+categories: [r, streetspace, sf]
+image: "image.png"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    toc-title: Contents
+    toc-location: left
+---
+
+<!--------------- post ----------------->
+
+### Streetspace allocation
+
+The amount of space designated for footways and carriageways is a crucial street design parameter that can affect the streets' environmental quality. It could be expected that streets with higher pedestrian activity would have wider pavements. To a certain extent this is confirmed by the greater association that exists between central streets and streets with wider pavements in London[^1]. Provided the width of streets is dictated by land ownership structure which are difficult to transform, the relationship between footway and carriageway street width is a critical parameter for streetspace reallocation interventions. 
+
+[^1]: See chapter 4 of PhD thesis (Rethinking Streets: a study of streetspace allocation metrics and street networks in London
+)[https://discovery.ucl.ac.uk/id/eprint/10127358/]
+
+This exercise examines the streetspace allocation data set published for London [^2] by creating a streetspace index that quantifies footway/carriageway relationships
+
+[^2]: See (repository)[https://zenodo.org/record/3783807#.Ynpu_hPMLyI] and technical specifications
+
+### The streetspace allocation dataset for London
+
+After downloading and before reading the data the following packages are loaded to run the code.
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(ggthemes)
+library(gridExtra)
+library(extrafont)
+library(patchwork)
+#install.packages("scico")
+library(scico)
+library(plotly)
+library(reactable)
+```
+
+Then we can read the data (earlier the dataset was converted to RDS to reduce its size)
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+sa <- readRDS("streetspace_dataset.rds")
+
+# read wards data
+# dir.create("./data_raw")
+target.file <- "./data_raw/wards.zip"
+
+download.file(url = "https://data.london.gov.uk/download/statistical-gis-boundary-files-london/08d31995-dd27-423c-a987-57fe8e952990/London-wards-2018.zip", destfile = target.file)
+unzip(target.file, overwrite = TRUE, exdir = "./data_raw/")
+# file.remove(target.file)  # Delete the zip file
+
+# Read the unzipped file
+lw <- st_read("./data_raw/London-wards-2018_ESRI/London_Ward.shp", quiet = TRUE)
+```
+
+### Creating the streetspace index {#sec-sindex}
+
+The streetspace index is calculated taking the Link and Place framework as a reference [^3]. A 3x3 matrix is created from 3 classes of footway and carriageways (low, mid and high widths). The matrix describes a double slope surface to which all values (footway and carriageway widths) are fitted.
+
+[^3]: See Jones, P., Boujenko, N. and Marshall, S., 2007. Link & Place-A guide to street planning and design
+
+```{r}
+#| echo: false
+#| include: false
+options(scipen = 999)
+```
+
+```{r}
+#| echo: false
+#| include: false
+# It is enough to specify tree non-collinear points in 3D space to construct a plane
+# https://www.wolframalpha.com/widgets/view.jsp?id=79514e888b8f2acacc68738d0cbb803e
+data.frame("viri"=c(1:9),
+           "x"=c(rep(1,3), rep(2,3), rep(3,3)),
+           "y"=c(rep(c(1,2,3), 3)),
+           "x1"=c(rep("low",3), rep("mid",3), rep("high",3)),
+           "y1"=c(rep(c("low", "mid", "high"), 3)),
+           "score"=c(6,3,1,8,5,2,9,7,4)) %>%
+  mutate(
+    # scoring 1
+    z = (3*x - 5*y + 14) / 2,
+    # scoring 2
+    z1 = (3*x - 6*y + 17) / 2,
+    # scoring 3
+    z2 = x - 3*y + 9) -> scoret
+
+mycols <-  rev(c("#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00"))
+mypal9 <- colorRampPalette(mycols)(9)
+mypalette <- scico(9, palette = 'roma')
+
+ggplot(scoret, aes(x, y, fill=factor(z))) + 
+  geom_tile() +
+  geom_text(aes(x, y, label = z), color = "white", size = 6) +
+  theme_tufte(base_family="Georgia") +
+  scale_fill_manual(values = mypal9) +
+  labs(x="Pedestrian space", y="Vehicular space", title = "Scoring 1", subtitle = "(3*x - 5*y + 14) / 2") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        plot.title= element_text(size=20),
+        plot.subtitle= element_text(size=18)) +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA)) +
+  scale_x_continuous(breaks=c(1,2,3), labels=c("Low", "Mid", "High")) +
+  scale_y_continuous(breaks=c(1,2,3), labels=c("Low", "Mid", "High")) -> pmatrix
+
+ggplot(scoret, aes(x, y, fill=factor(z1))) + 
+  geom_tile() +
+  geom_text(aes(x, y, label = z1), color = "white", size = 6) +
+  theme_tufte(base_family="Georgia") +
+  scale_fill_manual(values = mypal9) +
+  labs(x="Pedestrian space", y="Vehicular space", title = "Scoring 2", subtitle = "(3*x - 6*y + 17) / 2") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        plot.title= element_text(size=20),
+        plot.subtitle= element_text(size=18)) +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA)) +
+  scale_x_continuous(breaks=c(1,2,3), labels=c("Low", "Mid", "High")) +
+  scale_y_continuous(breaks=c(1,2,3), labels=c("Low", "Mid", "High")) -> pmatrix1
+
+ggplot(scoret, aes(x, y, fill=factor(z2))) + 
+  geom_tile() +
+  geom_text(aes(x, y, label = z2), color = "white", size = 6) +
+  theme_tufte(base_family="Georgia") +
+  scale_fill_manual(values = mypal9) +
+  labs(x="Pedestrian space", y="Vehicular space", title = "Scoring 3", subtitle = "x - 3*y + 9") +
+  coord_fixed() +
+  theme(legend.position = "none",
+        plot.title= element_text(size=20),
+        plot.subtitle= element_text(size=18)) +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA)) +
+  scale_x_continuous(breaks=c(1,2,3), labels=c("Low", "Mid", "High")) +
+  scale_y_continuous(breaks=c(1,2,3), labels=c("Low", "Mid", "High")) -> pmatrix2
+
+# given x=fow, y=caw, calculate z=index
+# index = 3 points
+# ratio = caw/fow
+# dif = fow -caw
+sa %>%
+  mutate(index = (3*foW - 5*caW + 14) / 2,
+         index2 = (3*foW - 6*caW + 17) / 2, # plane through (1,1,7) (3,1,10) (1,3,1)
+         dif = foW - caW,
+         index3 = foW - 3*caW + 9,
+         ratio = foW / caW) %>%
+  mutate(Sindex = ((index - min(index)) / (max(index) - min(index))*100),
+         Sindex2 = ((index2 - min(index2)) / (max(index2) - min(index2))*100),
+         Sdif = ((dif - min(dif)) / (max(dif) - min(dif))*100),
+         Sindex3 = ((index3 - min(index3)) / (max(index3) - min(index3))*100)) -> sa1
+
+# scatter plot with index colours
+sa1 %>% ggplot(aes(foW, caW, colour = Sindex)) +
+  geom_point(alpha = .2, shape = 15, size = 1.5) +
+  ggtitle(subtitle = expression(paste("Index = ", frac((3*footway-5*carriageway+14),2)),sep=''),
+          label = "Index") +
+  scale_colour_gradientn(colours = mypalette, name = "Streetspace 0-100") +
+  theme_bw(base_family="Georgia") +
+  theme(axis.text=element_text(size=9), axis.title=element_text(size=9), 
+        plot.title = element_text(size = 11, face = "bold"),
+        panel.grid.major = element_blank(),panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_blank()) +
+  coord_equal() +
+  ylab("Vehicular space") +
+  xlab("Pedestrian space") -> pind
+
+sa1 %>% ggplot(aes(foW, caW, colour = Sindex2)) +
+  geom_point(alpha = .2, shape = 15, size = 1.5) +
+  ggtitle(subtitle = expression(paste("Index = ", frac((3*footway-6*carriageway+17),2)),sep=''),
+          label = "Index2") +
+  scale_colour_gradientn(colours = mypalette, name = "Streetspace 0-100") +
+  theme_bw(base_family="Georgia") +
+  theme(axis.text=element_text(size=9), axis.title=element_text(size=9), 
+        plot.title = element_text(size = 11, face = "bold"),
+        panel.grid.major = element_blank(),panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_blank()) +
+  coord_equal() +
+  ylab("Vehicular space") +
+  xlab("Pedestrian space") -> pind2
+
+sa1 %>% ggplot(aes(foW, caW, colour = Sindex3)) +
+  geom_point(alpha = .2, shape = 15, size = 1.5) +
+  ggtitle(subtitle = "foW - 3caW + 9",
+          label = "Index3") +
+  scale_colour_gradientn(colours = mypalette, name = "Streetspace 0-100") +
+  theme_bw(base_family="Georgia") +
+  theme(axis.text=element_text(size=9), axis.title=element_text(size=9), 
+        plot.title = element_text(size = 11, face = "bold"),
+        panel.grid.major = element_blank(),panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_blank()) +
+  coord_equal() +
+  ylab("Vehicular space") +
+  xlab("Pedestrian space") -> pind3
+```
+
+An approximate score from 1-9 is assigned according streetspace allocation metrics and their relationship. I tested different plane functions (different scores) but chose _Index 3_ which I believe most closely approximates to the negative/positive impacts of street design in the environmental quality of streets. For example, a street with wide footway (high pedestrian space) and narrow carriageway (low vehicular space) scores 9. While a score of 1 is assigned to streets at the opposite corner of the matrix (low pedestrian space and high vehicular space). Similarly, a street with low-low space scores (7) higher than a street with high-high space (3). This assumes that the negative impact of wide carriageways (despite the presence of wide footways) is higher than the negative impact of narrow pavements (despite the presence of narrow carriageways). Overall, a general rule for this scoring matrix is that being the footway equal streets with wider carriageways have lower scores and being the carriageway equal streets with wider footways have higher scores.
+
+
+```{r fig.height= 5, fig.width=14, dev.args = list(bg = 'transparent')}
+#| echo: false
+#| fig-cap: Streetspace allocation scoring matrices that were tested
+layout <- '
+ABC
+'
+patchwork::wrap_plots(A=pmatrix, B=pmatrix1, C=pmatrix2, design = layout)
+```
+
+```{r fig.height= 7, fig.width=14}
+#| echo: false
+#| include: false
+#pind + pind2 + pind3
+```
+
+After selecting the scoring approach (and function: `x - 3*y + 9`), we can calculate the streetspace index (S-Index). This takes all footways (x) and carriageways (y) widths, apply the plane function and transform the results to a scale of 1-100
+
+```{r}
+sa %>%
+  mutate(sco3 = foW - 3*caW + 9,
+         # min-max normalisation * 100
+         S_Index = ((sco3 - min(sco3)) / (max(sco3) - min(sco3))*100)) -> sai
+```
+
+```{r}
+#| echo: false
+#| include: false
+
+sa1 %>%
+  rename(`S-Index` = Sindex3) -> sa1
+# scatter plot with index colours
+sa1 %>% 
+  sample_n(10000) %>%
+  ggplot() +
+  geom_point(aes(foW, caW, colour = `S-Index`, text = paste('Ratio: ', round(ratio, 1), '</br>Score-1: ', Sindex, '</br>Score-2: ', Sindex2, '</br>Diff: ', Sdif)), alpha = .2, shape = 15, size = 1.5) +
+  ggtitle(subtitle = expression(paste("Index = ", frac((3*footway-5*carriageway+14),2)),sep=''),
+          label = "Streetspace index") +
+  geom_segment(aes(x = 0, y = 0, xend = 26, yend = 26), colour = "gray70", size = .1) +
+  scale_colour_gradientn(colours = mypalette, name = "S-Index 0-100") +
+  theme_bw(base_family="Georgia") +
+  theme(axis.text=element_text(size=9), axis.title=element_text(size=9), 
+        plot.title = element_text(size = 11, face = "bold"),
+        panel.grid.major = element_blank(),panel.grid.minor = element_blank(),
+        panel.border = element_blank(),
+        axis.line = element_blank()) +
+  coord_equal() +
+  ylab("Vehicular space") +
+  xlab("Pedestrian space") -> pscats
+```
+
+How does the index work? The interactive plot for a sample of 10,000 streets shows the final index after applying the scoring function to the street's footways and carriagways widths. It can be seen that the streetspace index (S-Index - scoring 3) performs better when looking at streets with the same ratio (e.g. those following the direction of the grey line). This reveals that unlike the other indices, there is a clear differentiation between streets with high-high and low-low streetspace metrics. This also applies to the extra index labelled as Diff, that take the subtraction of Footway - Carriageway widths, which won't differentiate between streets with the same ratio.
+
+```{r}
+#| echo: false
+ggplotly(pscats)
+```
+
+### Mapping the S-Index
+
+Before mapping the S-Index it is useful to look at the distribution of values, which is this case is near normal.
+
+```{r}
+#| echo: false
+#| include: false
+mycols <-  rev(c("#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00"))
+mypal7 <- colorRampPalette(mycols)(7)
+```
+
+```{r fig.height= 3, fig.width=7}
+#| fig-width: 7
+#| fig-height: 3
+#| #| fig-cap: Distributin of S-Index values
+sai %>%
+  # make 10 groups with equal number of observations
+  mutate(cut = cut_number(S_Index, n = 10),
+         avg = mean(S_Index),
+         median = median(S_Index)) %>%
+  ggplot() +
+  # mean
+  annotate("text", x=mean(sai$S_Index), y=4000, label=paste("Mean", round(mean(sai$S_Index),1), sep = " "), family = "Georgia", size = 3, hjust = 1.05) +
+  geom_vline(aes(xintercept = mean(S_Index)), colour="gray55", size=.15) +
+  # median
+  annotate("text", x=median(sai$S_Index), y=4000, label=paste("Median", round(median(sai$S_Index),1), sep = " "), family = "Georgia", size = 3, hjust = -0.05) +
+  geom_vline(aes(xintercept = median(S_Index)), colour="gray55", size=.15) +
+  geom_histogram(aes(S_Index, fill = cut), binwidth = 0.1) +
+  theme_tufte() +
+  scale_fill_manual(values = colorRampPalette(mycols)(10), name = "") +
+  labs(y = "", x="")
+```
+
+```{r fig.height= 10, fig.width=4}
+#| echo: false
+#| include: false
+sa1 %>%
+  mutate(cut = cut_number(Sindex2, n = 7)) %>%
+  ggplot() +
+  geom_sf(aes(col = cut), size = 0.4, show.legend = "line") +
+  scale_colour_manual(values = mypal7, name = "Sindex2") +
+  theme_tufte() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  coord_sf(expand = FALSE, xlim = c(529178.4290, 534107.8882), ylim = c(178918.7220, 196815.6574), datum = 27700) -> spin2 
+
+sa1 %>%
+  mutate(cut = cut_number(`S-Index`, n = 7)) %>%
+  ggplot() +
+  geom_sf(aes(col = cut), size = 0.4, show.legend = "line") +
+  scale_colour_manual(values = mypal7, name = "Sindex3") +
+  theme_tufte() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  coord_sf(expand = FALSE, xlim = c(529178.4290, 534107.8882), ylim = c(178918.7220, 196815.6574), datum = 27700) -> spin3 
+```
+
+```{r fig.height= 10, fig.width=8}
+#| echo: false
+#| include: false
+#spin2 + spin3
+```
+
+Plotting a section of London with 10 classes of the S-Index shows an interesting pattern. Main thoroughfares can be identified in the lower tiers coloured in red (potentially with higher vehicular traffic) while it is possible to identify a cluster of 'blue' streets in the West End area which corresponds with higher street level pedestrian activity. 
+
+```{r}
+#| echo: false
+#| include: false
+
+# dissolve by District to get boroughs
+lw %>%
+  group_by(DISTRICT) %>%
+  summarise(.) -> lb
+
+# borough centroids
+lb %>%
+  st_centroid(.) -> lbc
+
+lbc %>%
+  filter(DISTRICT == "City and County of the City of London") %>%
+  st_buffer(., 5000) -> b1
+
+b1 %>%
+  st_buffer(., 5000) -> b2
+
+lb %>%
+  st_join(., b1) %>%
+  st_join(., b2) %>%
+  mutate(b1 = case_when(!is.na(DISTRICT.y) ~ 1,
+                        TRUE ~ 0),
+         b2 = case_when(!is.na(DISTRICT) ~ 1,
+                        TRUE ~ 0), 
+         sortc = b1 + b2) %>%
+  arrange(desc(sortc)) %>%
+  mutate(rn = row.names(.)) %>%
+  select(rn, DISTRICT.x) %>%
+  rename(bname = DISTRICT.x) -> lbcd
+```
+
+```{r fig.height=5, fig.width=6}
+#| echo: false
+#| include: false
+# draw diagonal from bbox (xlim ylim)
+rbind(c(521665.5110,176883.0072),c(540778.3620,182798.4996)) %>%
+  st_linestring(.) %>%
+  st_cast("LINESTRING") %>%
+  st_sfc(., crs = 27700) %>%
+  st_sf(.) %>%
+  # bbox of diagonal
+  st_bbox() %>% 
+  st_as_sfc() %>%
+  st_sf() -> coar
+
+# union wards
+lw %>%
+  st_union(.) -> lwc
+
+lwc %>%
+  ggplot() +
+  geom_sf(fill = NA) +
+  geom_sf(data = coar, fill = NA, col = "tomato") +
+  geom_sf(data = lbcd, fill = NA, col = "grey", lwd = 0.1) + 
+  geom_sf_text(data = lbcd, aes(label = rn), size = 2.5, alpha=1, vjust = 0.5, hjust = 0.5) +
+  theme_tufte() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) -> plsec
+```
+
+```{r fig.width=3, fig.height=5}
+#| echo: false
+#| include: false
+# list of boroughs
+lbcd %>%
+  st_drop_geometry() %>%
+  mutate(x = 1,
+         bname=recode(bname, `City and County of the City of London`="City of London")) %>%
+  ggplot() +
+  geom_text(aes(x=x, y=reorder(as.numeric(rn), desc(as.numeric(rn))), label = rn), hjust = 1, family = "Times New Roman", size=2.3) +
+  geom_text(aes(x=x, y=reorder(as.numeric(rn), desc(as.numeric(rn))), label = paste0(" ", bname, sep = " ")), hjust = 0, family = "Times New Roman", size=2.3) +
+  xlim(1, 1.040) +
+  theme_void() -> lbnl
+```
+
+```{r}
+#| echo: false
+#| include: false
+plsec + lbnl
+```
+
+
+```{r fig.height= 3, fig.width=14}
+#| fig-cap: S-Index for a section of London
+#| fig-width: 14
+#| fig-height: 3
+#| column: page
+sai %>%
+  mutate(cut = cut_number(S_Index, n = 10)) %>%
+  ggplot() +
+  geom_sf(aes(col = cut), size = 0.4, show.legend = "line") +
+  scale_colour_manual(values = colorRampPalette(mycols)(10), name = "S-Index") +
+  theme_tufte() +
+  theme(axis.title = element_blank(),
+        axis.text = element_blank(),
+        axis.ticks = element_blank()) +
+  coord_sf(expand = FALSE, xlim = c(521665.5110, 540778.3620), ylim = c(176883.0072,182798.4996), datum = 27700) -> psl
+
+grid.arrange(psl, plsec, lbnl, widths = c(5,2,1))
+```
+
+### Profiling London boroughs with the S-Index
+
+The S-Index can be summarised by Borough to compare their performance and visualise where there is opportunity for intervention. The scoring matrix in @sec-sindex shows how the reallocation of streetspace following a bottom-left direction of the matrix (low-high to high-low) will improve the S-Index. The table below shows a summary of the S-Index and street metrics by Borough. It doesn't appear surprising that Westminster (City of Westminster) is the worst performing not only due to the large number of mayor roads crossing through the borough but also probably because of their well-known car-oriented policies.
+
+```{r}
+#| echo: false
+#| tbl-cap: "S-Index and streetspace allocation by borough"
+# get borough points and ward names
+lw %>%
+  group_by(DISTRICT) %>%
+  summarise() -> lb
+
+lb %>%
+  st_centroid() -> lbc
+
+lbc %>%
+  st_join(., lw) %>%
+  rename(bname = DISTRICT.x,
+         wname = NAME) %>%
+  select(bname, wname) -> lbc1
+
+# join sai with lb
+sai %>%
+  st_set_crs(27700) %>%
+  # filter empty geometries ~89
+  filter(!st_is_empty(.)) %>%
+  st_join(., lb) %>%
+  rename(bname = DISTRICT) -> saib
+
+# summary by borough
+saib %>%
+  mutate(slen = st_length(.),
+         slenk = units::set_units(slen, km)) %>%
+  st_drop_geometry() %>%
+  filter(!is.na(bname)) %>%
+  group_by(bname) %>%
+  summarize(`Streets count` = n(),
+            `Street length (km)` = round(as.numeric(sum(slenk)),0),
+            `S-Index` = round(mean(S_Index),2),
+            `Footway` = round(mean(foW),1),
+            `Carriageway` = round(mean(caW),1),
+            `Total` = round(mean(toW),1)) %>%
+  rename(Borough = bname)  %>%
+  select(Borough, `S-Index`, everything()) -> ssta
+
+#saveRDS(ssta, "ssta.rds")
+ssta %>%
+  rename(sindex = `S-Index`,
+         stc = `Streets count`,
+         stl = `Street length (km)`,
+         fow = Footway,
+         caw = Carriageway,
+         tow = Total) -> ssta1
+
+#install.packages("tippy")
+library(tippy)
+
+reactable(ssta1, defaultColDef = colDef(minWidth = 90, na = "–"), 
+          outlined = TRUE, highlight = TRUE, wrap = FALSE, resizable = TRUE,
+          searchable = TRUE, defaultPageSize = 5, showPageInfo = FALSE,
+          showPageSizeOptions = TRUE, pageSizeOptions = c(5, 10, 50),
+          defaultSorted = list(sindex = "desc"), 
+          columns =  list(
+            sindex = colDef(header = tippy("sindex", tooltip = "S-Index"), format = colFormat(digits = 2)),
+            stc = colDef(header = tippy("stc", tooltip = "Streets count")),
+            stl = colDef(header = tippy("stl", tooltip = "Total street length (km)")),
+            fow = colDef(header = tippy("fow", tooltip = "Avg footway width (m)"), format = colFormat(digits = 1)),
+            caw = colDef(header = tippy("caw", tooltip = "Avg carriageway width (m)"), format = colFormat(digits = 1)),
+            tow = colDef(header = tippy("tow", tooltip = "Avg total width (m)"), format = colFormat(digits = 1))
+          ))
+```
+
+
+
+

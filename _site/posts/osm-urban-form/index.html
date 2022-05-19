@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.309">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Nicolas Palominos">
+
+<title>urban data notebook - Urban morphology patterns from OSM data</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<link href="../../favicon.ico" rel="icon">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+<meta name="twitter:title" content="urban data notebook - Urban morphology patterns from OSM data">
+<meta name="twitter:image" content="image.png">
+<meta name="twitter:creator" content="@npalomin">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="floating nav-fixed slimcontent">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">urban data notebook</span>
+  </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html">Nicolas Palominos</a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/npalomin"><i class="bi bi-github" role="img">
+</i> 
+ </a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/npalomin"><i class="bi bi-twitter" role="img">
+</i> 
+ </a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://npalomin.github.io/"><i class="bi bi-person-circle" role="img" aria-label="website">
+</i> 
+ </a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Urban morphology patterns from OSM data</h1>
+            <p class="subtitle lead"></p><p>Comparative visualisation of urban morphology patterns using OpenStreetMap data</p><p></p>
+                          <div class="quarto-categories">
+                <div class="quarto-category">python</div>
+                <div class="quarto-category">osm</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+
+
+
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Nicolas Palominos </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">April, 2022</p>
+      </div>
+    </div>
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#osm-data" id="toc-osm-data" class="nav-link active" data-scroll-target="#osm-data">OSM data</a></li>
+  <li><a href="#python-packages" id="toc-python-packages" class="nav-link" data-scroll-target="#python-packages">Python packages</a></li>
+  <li><a href="#an-atlas-of-urban-form" id="toc-an-atlas-of-urban-form" class="nav-link" data-scroll-target="#an-atlas-of-urban-form">An atlas of urban form</a></li>
+  </ul>
+</nav>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block page-columns page-full" id="quarto-document-content">
+
+
+
+
+<!--------------- post ----------------->
+<section id="osm-data" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="osm-data">OSM data</h3>
+<p>An astonishing record of 100 million contributions have been added to OpenStreetMap providing critical infrastructure for understanding the built environment of cities<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> where the majority of the global population lives. While OSM originated as a wiki, crowdsourced and collaborative project, it can be speculated that the growth of OSM has recently exploded due to the participation of <em>corporate mappers</em><a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<p>In this exercise I explore a set of urban features extracted from OSM which are considered relevant for describing the form and organisation of cities.</p>
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="osm-world.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Planetary map with participation of corporate mappers</figcaption><p></p>
+</figure>
+</div>
+
+<div class="no-row-height column-margin column-container"><div class="">
+
+</div></div></section>
+<section id="python-packages" class="level3">
+<h3 class="anchored" data-anchor-id="python-packages">Python packages</h3>
+<p>There are a handful of packages to read OSM data directly into the programming environment. In my experience Python packages have resulted to be more reliable when downloading data than those available in R. The main difference between the most common packages OSMnx<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> and Pyrosm<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>, is that OSMnx reads the data from the OverPass API and Pyrosm reads data from PBF data providers. In this exercise I’ll adapt the code we used for a study that explores new trends in mapping the space of the street in OpenStreetMap<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a>.</p>
+</section>
+<section id="an-atlas-of-urban-form" class="level3">
+<h3 class="anchored" data-anchor-id="an-atlas-of-urban-form">An atlas of urban form</h3>
+<p>The form of cities can be studied through many different approaches<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a>. In this study I chose to examine the urban topography of cities by plotting 3 sets of data for 9 city centres: the street grid<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a>, green &amp; blue features and Points of Interest. Each city centre was defined as a ~5 square km cut-off from a selected central landmark. The resulting drawings are displayed at the same scale side-by-side not only to provide orientation about the different morphological patterns but also to compare the different urban dimensions<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a>. Some interesting observations can be made. Water bodies and big green areas establish a certain of order that’s followed by street grids. Central Park in New York is as large as the system of parks in London (St.&nbsp;James, Green and Hyde parks) an also comparable in size with the Parque Metropolitano in Santiago (Cerro San Cristobal). Surprisingly Barcelona doesn’t have a central large green area, and the same applied to Mexico City and Lima. While the density of Points of Interest is biased by the potential higher mapper activities, there tends to be a trend of higher concentration of POI in cities that seem to have higher street level activity and density at their centres (Paris, Barcelona, London, New York, Tokyo).</p>
+<div class="columns">
+<div class="column" style="width:33%;">
+<p><img src="img/Barcelona.png" class="img-fluid"> <img src="img/London.png" class="img-fluid"> <img src="img/Paris.png" class="img-fluid"></p>
+</div><div class="column" style="width:33%;">
+<p><img src="img/Chicago.png" class="img-fluid"><br>
+<img src="img/Mexico%20City.png" class="img-fluid"> <img src="img/Santiago.png" class="img-fluid"></p>
+</div><div class="column" style="width:33%;">
+<p><img src="img/Lima.png" class="img-fluid"><br>
+<img src="img/New%20York.png" class="img-fluid"> <img src="img/Tokyo.png" class="img-fluid"></p>
+</div>
+</div>
+<!---osm-urban-form.py contains script for plotting selected cities--->
+
+
+</section>
+
+
+<div id="quarto-appendix" class="default"><section class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1" role="doc-endnote"><p>See ‘100 million edits to OpenStreetMap | OpenStreetMap Blog’ (no date). Available at: https://blog.openstreetmap.org/2021/02/25/100-million-edits-to-openstreetmap/ (Accessed: 29 April 2022).<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>See Anderson, J., Sarkar, D. and Palen, L. (2019) ‘Corporate Editors in the Evolving Landscape of OpenStreetMap’, ISPRS International Journal of Geo-Information, 8(5), p.&nbsp;232. doi:10.3390/ijgi8050232.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>See https://github.com/gboeing/osmnx<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>See https://pyrosm.readthedocs.io/en/latest/#when-should-i-use-pyrosm<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" role="doc-endnote"><p>See https://github.com/npalomin/map-sbb<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" role="doc-endnote"><p>Amongst others, see Moudon, A.V. (1997) ‘Urban morphology as an emerging interdisciplinary field’, Urban Morphology, 1(1), pp.&nbsp;3–10.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" role="doc-endnote"><p>See <a href="https://anvaka.github.io/city-roads/"><span class="citation" data-cites="anvaka">@anvaka</span></a> interactive site for visualising and downloading street data<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8" role="doc-endnote"><p>For a study on urban squares comparison for urban design see <a href="https://issuu.com/birkhauser.ch/docs/squares">Squares. Urban Spaces in Europe</a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section><section class="quarto-appendix-contents"><h2 class="anchored quarto-appendix-heading">Citation</h2><div><div class="quarto-appendix-secondary-label">BibTeX citation:</div><pre class="sourceCode code-with-copy quarto-appendix-bibtex"><code class="sourceCode bibtex">@online{palominos2022,
+  author = {Nicolas Palominos},
+  title = {Urban Morphology Patterns from {OSM} Data},
+  date = {2022-04},
+  langid = {en}
+}
+</code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre><div class="quarto-appendix-secondary-label">For attribution, please cite this work as:</div><div id="ref-palominos2022" class="csl-entry quarto-appendix-citeas" role="doc-biblioentry">
+Nicolas Palominos. 2022. <span>“Urban Morphology Patterns from OSM
+Data.”</span> April 2022.
+</div></div></section></div></main> <!-- /main -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

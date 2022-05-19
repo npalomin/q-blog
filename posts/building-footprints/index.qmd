@@ -1,0 +1,435 @@
+---
+title: "Building footprints from Bing Maps imagery"
+subtitle: |
+  A visualisation exercise of half-a-dozen million polygons
+author:
+  name: Nicolas Palominos
+citation: true
+date: "2022-05"
+date-format: "MMMM, YYYY"
+categories: [r, footprints, sql]
+image: "image.png"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    toc-title: Contents
+    toc-location: left
+---
+
+<!--------------- post ----------------->
+
+### Building footprints at a global scale
+ 
+Often the pace of urbanisation is faster than the capacity that mapping instruments/agencies have to keep an updated record of urban expansion. Following the previous release of building footprints across different areas of the world [^1], a repository of 777M building footprints has been published in a GitHub repository organised by country [^2]. The purpose of this exercise is to visualise some of this data to assess its quality which could inform possible research scenarios. I looked at a sample of the more than 6 million polygons available for Chile, more specifically I mapped central and peripheral areas of Santiago.
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Bulding outlines extracted from satellite imagery (Microsoft)"}
+knitr::include_graphics("img/footprints-s.png")
+```
+
+[^1]: See Microsoft's (AI Assisted Mapping)[https://www.microsoft.com/en-us/maps/building-footprints]
+
+[^2]: See (repository)[https://github.com/microsoft/GlobalMLBuildingFootprints]
+
+### 6 million polygons
+
+While the zipped file for Chile is ~500 MB, the unzipped version is a GeoJSON file of more than 2 GB. To facilitate handling these large ammount of data I decided to set up and use a spatial database and query it using SQL. All the processing was conducted in RStudio supported by the packages `sf`, `DBI`, and `RPostgres`.
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(tidyverse)
+library(sf)
+library(ggplot2)
+library(ggthemes)
+library(gridExtra)
+library(extrafont)
+library(patchwork)
+#install.packages("scico")
+library(scico)
+library(plotly)
+library(reactable)
+#install.packages("DBI")
+library(DBI)
+#install.packages("RPostgres")
+library(RPostgres)
+#install.packages("chilemapas")
+library(chilemapas)
+library(leaflet)
+library(leafgl)
+library(leaflet.extras)
+library(htmlwidgets)
+```
+
+### Visualising footprints
+
+In order to have a close inspection of the correspondence between the vector building polygons and standard satellite imagery I decided to create an interactive map using `leaflet`. The three areas selected for inspection are shown in the map below covering the North, Centre and South of Santiago. The North periphery is know for the presence of suburban single-family houses organised in gated communities. The centre is still considered the civic centre of the capital. The South periphery is an area of high density of social housing that would be radically transformed by the forthcoming construction of a Metro line.
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| echo: false
+# create polygon from point
+# santiago, -7864194.2914,-3954142.6549
+
+st_point(x = c(-7864194.2914,-3954142.6549)) %>%
+  st_cast(.,"POINT") %>%
+  st_sfc(., crs = 3857) %>%
+  st_sf(.) %>%
+  st_buffer(., 2000) %>%
+  st_bbox(.) %>% 
+  st_as_sfc() %>%
+  st_sf() %>%
+  mutate(name = "Santiago") -> scl_p
+scl_p %>%
+  st_transform(., crs = "EPSG:4326") %>%
+  st_geometry(.) -> scl_pg
+scl_pg[[1]]
+
+# la pintana, -7860723.2274,-3974860.6539
+st_point(x = c(-7860723.2274,-3974860.6539)) %>%
+  st_cast(.,"POINT") %>%
+  st_sfc(., crs = 3857) %>%
+  st_sf(.) %>%
+  st_buffer(., 2000) %>%
+  st_bbox(.) %>% 
+  st_as_sfc() %>%
+  st_sf() %>%
+  mutate(name = "La Pintana") -> scl_p1
+
+# colina, -7866740.5160,-3931743.1159
+st_point(x = c(-7866740.5160,-3931743.1159)) %>%
+  st_cast(.,"POINT") %>%
+  st_sfc(., crs = 3857) %>%
+  st_sf(.) %>%
+  st_buffer(., 2000) %>%
+  st_bbox(.) %>% 
+  st_as_sfc() %>%
+  st_sf() %>%
+  mutate(name = "Colina") -> scl_p2
+
+rbind(scl_p, scl_p1, scl_p2) -> scl_s
+```
+
+```{r dev.args = list(bg = 'transparent')}
+#| message: false
+#| warning: false
+#| quiet: true
+# chilemapas
+mapa_comunas %>%
+  st_as_sf() %>%
+  st_set_crs("EPSG:4326") -> cl_comunas
+
+cl_comunas %>%
+  filter(codigo_region == "13") %>%
+  ggplot() +
+  geom_sf(fill = NA, col = "grey", lwd = 0.4) +
+  geom_sf(data = scl_s, col = "tomato") +
+  geom_sf_label(data = scl_s, aes(label = name), size = 2.5, alpha=0.5, vjust = 0.5, hjust = 0, nudge_x = 0.03) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+```
+
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# read building data from https://github.com/microsoft/GlobalMLBuildingFootprints
+# dir.create("./data_raw")
+# target.file <- "./data_raw/chile.zip"
+
+# download.file(url = "https://minedbuildings.blob.core.windows.net/global-buildings/2022-05-02/Chile.zip", destfile = target.file)
+# unzip(target.file, overwrite = TRUE, exdir = "./data_raw/")
+# file.remove(target.file)  # Delete the zip file
+
+# Read the unzipped file
+# cl <- st_read("./data_raw/Chile.geojsonl", quiet = TRUE)
+# cl <- st_read("./data_raw/Chile.gpkg", quiet = TRUE)
+cl <- readRDS("~/Documents/Q_GitHub/q-blog/posts/building-footprints/data_raw/Chile.rds")
+# Save an object to a file
+# saveRDS(cl, file = "./data_raw/Chile.rds")
+# st_write(cl, "data_raw/Chile.gpkg")
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+
+# ref: https://oliverstringham.com/blog/data-science-tutorials/setting-up-postgres-postgis-to-run-spatial-queries-in-r-tutorial/
+# ref: https://www.r-bloggers.com/2019/04/interact-with-postgis-from-r/
+# connect to postgres
+con <- dbConnect(RPostgres::Postgres(),
+                 host = 'localhost', # host name, can be website/server
+                 port = 5432, # default port of postgres
+                 dbname = 'postgres', # name of database in postgres
+                 user = 'postgres') # the default user
+
+# create schema
+# dbSendQuery(con, "CREATE SCHEMA cl_build;")
+
+# check it works
+# dbGetQuery(con, "SELECT schema_name
+#                  FROM information_schema.schemata;")
+
+# connect to schema
+con <- dbConnect(RPostgres::Postgres(),
+                 host = 'localhost', # host name, can be website/server
+                 port = 5432, # default port of postgres
+                 dbname = 'postgres', # name of database in postgres
+                 user = 'postgres', # the default user
+                 options="-c search_path=cl_build") # specify what schema to connect to
+
+# activate the PostGIS extension in postgres
+# dbSendQuery(con, "CREATE EXTENSION postgis SCHEMA cl_build;")
+
+# write table
+# st_write(obj = cl, 
+#          dsn = con, 
+#          Id(schema="cl_build", table = "cl_all_build"))
+
+# check tables on schema
+dbListTables(con)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# check CRS
+# cl %>%
+#   sample_n(100) -> cl_sample
+
+# cl_sample
+```
+
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# chilemapas
+mapa_comunas %>%
+  st_as_sf() %>%
+  st_set_crs("EPSG:4326") -> cl_comunas
+
+codigos_territoriales -> nm_comunas
+
+# write table
+# st_write(obj = cl_comunas, 
+#          dsn = con, 
+#          Id(schema="cl_build", table = "cl_comunas")) 
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# 13501 Melipilla codigo_comuna
+cl_comunas[cl_comunas$codigo_comuna == "13501",]
+# cl %>%
+#   st_intersects(., cl_comunas[cl_comunas$codigo_comuna == "13501",]) %>%
+#   show_query()
+
+# Read with dplyr directly in database
+cl_tbl <- tbl(con, "cl_all_build")
+cl_nm <- tbl(con, "cl_comunas")
+# Create query
+cl_nm %>%
+  filter(codigo_comuna == "13501") %>%
+  show_query()
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+dbListTables(con)
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# select 13501 Melipilla codigo_comuna and write to table
+cl_comunas[cl_comunas$codigo_comuna == "13501",] %>%
+  st_geometry(.) -> cl_mel_g
+
+# print geometry
+# cl_mel_g[[1]]
+
+# write table
+# st_write(obj = cl_mel_g, 
+#          dsn = con, 
+#          Id(schema="cl_build", table = "cl_mel_g")) 
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+con %>%
+  dbListTables()
+```
+
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+
+scl_p1 %>%
+  st_transform(., crs = "EPSG:4326") %>%
+  st_geometry(.) -> scl_p1g
+scl_p1g[[1]]
+
+scl_p2 %>%
+  st_transform(., crs = "EPSG:4326") %>%
+  st_geometry(.) -> scl_p2g
+scl_p2g[[1]]
+
+# read buildings intersecting with polygon
+# https://postgis.net/docs/ST_Intersects.html
+st_read(con,
+        query = "SELECT * FROM cl_all_build WHERE ST_Intersects(geom, 'SRID=4326;POLYGON ((-70.66323 -33.45716, -70.62729 -33.45716, -70.62729 -33.42718, -70.66323 -33.42718, -70.66323 -33.45716))');") -> scl_sample
+
+st_read(con,
+        query = "SELECT * FROM cl_all_build WHERE ST_Intersects(geom, 'SRID=4326;POLYGON ((-70.63204 -33.61229, -70.59611 -33.61229, -70.59611 -33.58236, -70.63204 -33.58236, -70.63204 -33.61229))');") -> scl_sample1
+
+st_read(con,
+        query = "SELECT * FROM cl_all_build WHERE ST_Intersects(geom, 'SRID=4326;POLYGON ((-70.6861 -33.28912, -70.65017 -33.28912, -70.65017 -33.25908, -70.6861 -33.25908, -70.6861 -33.28912))');") -> scl_sample2
+
+scl_sample %>%
+  mutate(name = "Santiago") -> santiago
+
+scl_sample1 %>%
+  mutate(name = "La Pintana") -> lapinta 
+
+scl_sample2 %>%
+  mutate(name = "Colina") -> colina
+
+rbind(santiago, lapinta, colina) -> bp
+
+# write table
+# st_write(obj = scl_sample, 
+#          dsn = con, 
+#          Id(schema="cl_build", table = "scl_sample")) 
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+scl_sample2 %>%
+  ggplot() +
+  geom_sf() +
+  theme_void()
+```
+
+::: {.column-page}
+::: {.column width="33%"}
+![](img/colina.png)
+:::
+::: {.column width="33%"}
+![](img/stgo.png)
+:::
+::: {.column width="33%"}
+![](img/lapinta.png)
+:::
+:::
+
+<caption>Satellite/building-outlines overlay for Colina, Santiago and La Pintana</caption>
+
+```{r}
+#| column: screen
+#| echo: false
+url_map <- "https://api.mapbox.com/styles/v1/npalomin/ckkfbcl5622tv17rzxz1lpt33/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g"
+
+leaflet(scl_sample2) %>%
+  addTiles(urlTemplate = url_map, group = "GreySat") %>%
+  addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
+  addPolygons(fillColor = NULL,
+              fillOpacity = 0,
+              stroke = TRUE,
+              color = "yellow",
+              weight = 1.5,
+              group = "Colina",
+              highlight = highlightOptions(fillOpacity = 0, weight = 2, opacity = 1, color = "cyan", bringToFront = TRUE, sendToBack = TRUE)) %>%
+  addPolygons(data = scl_sample,
+              fillColor = NULL,
+              fillOpacity = 0,
+              stroke = TRUE,
+              color = "yellow",
+              weight = 1.5,
+              group = "Santiago",
+              highlight = highlightOptions(fillOpacity = 0, weight = 2, opacity = 1, color = "cyan", bringToFront = TRUE, sendToBack = TRUE)) %>%
+  addPolygons(data = scl_sample1,
+              fillColor = NULL,
+              fillOpacity = 0,
+              stroke = TRUE,
+              color = "yellow",
+              weight = 1.5,
+              group = "La Pintana",
+              highlight = highlightOptions(fillOpacity = 0, weight = 2, opacity = 1, color = "cyan", bringToFront = TRUE, sendToBack = TRUE)) %>%
+  addLayersControl(overlayGroups = c("Colina", "Santiago", "La Pintana", "GreySat", "Satellite"), # baseGroups for one base group (only) at a time
+                   options = layersControlOptions(collapsed = FALSE)) %>%
+  hideGroup(c("Satellite"))
+```
+
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+st_read(con,
+        query = "SELECT * FROM cl_comunas WHERE codigo_comuna = '13501';")
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# read buildings intersecting with table polygon Melipilla
+# https://gis.stackexchange.com/questions/131236/select-polygon-intersections-between-two-tables-with-no-common-key
+st_read(con, query = "SELECT * FROM cl_all_build, cl_mel_g WHERE ST_Intersects(cl_all_build.geom, cl_mel_g.geom);") -> cl_mel
+
+# write table
+st_write(obj = cl_mel, 
+         dsn = con, 
+         Id(schema="cl_build", table = "cl_mel")) 
+```
+
+```{r}
+#| message: false
+#| warning: false
+#| quiet: true
+#| include: false
+#| echo: false
+# Disconnect from the database
+# dbDisconnect(con)
+```

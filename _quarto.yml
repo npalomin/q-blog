@@ -1,0 +1,27 @@
+project:
+  type: website
+
+website:
+  title: "urban data notebook"
+  twitter-card:
+    creator: "@npalomin"
+    card-style: summary_large_image
+  opengraph: true
+  favicon: favicon.ico
+  navbar:
+    right:
+      - about.qmd
+      - icon: github
+        href: https://github.com/npalomin
+      - icon: twitter
+        href: https://twitter.com/npalomin
+      - icon: person-circle
+        aria-label: website
+        href: https://npalomin.github.io/
+format:
+  html:
+    theme: litera
+    css: styles.css
+
+
+

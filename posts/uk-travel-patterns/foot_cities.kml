@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<kml xmlns="http://www.opengis.net/kml/2.2">
+<Document id="root_doc">
+<Schema name="foot_cities" id="foot_cities">
+	<SimpleField name="rn" type="string"></SimpleField>
+</Schema>
+<Folder><name>foot_cities</name>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#foot_cities">
+		<SimpleData name="rn">london</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-0.233117390231911,51.4226693394231 0.054344508591962,51.4179829652125 0.062444754331056,51.5976958673702 -0.226149184421476,51.6024123237217 -0.233117390231911,51.4226693394231</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#foot_cities">
+		<SimpleData name="rn">greater-manchester</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-2.39613171875317,53.3967974412798 -2.09535976467724,53.3974170915534 -2.09576492257009,53.5771853328909 -2.39781121070341,53.576561629309 -2.39613171875317,53.3967974412798</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#foot_cities">
+		<SimpleData name="rn">west-yorkshire</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-1.68621037025486,53.7060638311348 -1.38325109076287,53.7048879708537 -1.38060951531214,53.8846367091734 -1.68486686437432,53.8858202881078 -1.68621037025486,53.7060638311348</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#foot_cities">
+		<SimpleData name="rn">wales</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-3.31278751114729,51.3983879833167 -3.02535412866538,51.4012560642078 -3.02939688440723,51.5810566604792 -3.31796255256448,51.5781701665576 -3.31278751114729,51.3983879833167</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#foot_cities">
+		<SimpleData name="rn">west-midlands</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-2.05855772999327,52.3913554039807 -1.76466705345163,52.3911363282098 -1.763706811848,52.5709339321543 -2.05879801566773,52.5711544273267 -2.05855772999327,52.3913554039807</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+  <Placemark>
+	<Style><LineStyle><color>ff0000ff</color></LineStyle><PolyStyle><fill>0</fill></PolyStyle></Style>
+	<ExtendedData><SchemaData schemaUrl="#foot_cities">
+		<SimpleData name="rn">north-east</SimpleData>
+	</SchemaData></ExtendedData>
+      <Polygon><outerBoundaryIs><LinearRing><coordinates>-1.7677204890592,54.8863220999329 -1.4559677263947,54.8853267923395 -1.45353399464411,55.0650424786684 -1.76668200428082,55.0660444121034 -1.7677204890592,54.8863220999329</coordinates></LinearRing></outerBoundaryIs></Polygon>
+  </Placemark>
+</Folder>
+</Document></kml>
