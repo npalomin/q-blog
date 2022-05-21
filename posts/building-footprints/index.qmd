@@ -23,7 +23,7 @@ format:
  
 Often the pace of urbanisation is faster than the capacity that mapping instruments/agencies have to keep an updated record of urban expansion and growth. Following the previous release of building footprints across different areas of the world [^1], a repository of 777M building footprints has been published in a GitHub repository organised by country [^2]. The purpose of this exercise is to visualise some of this data to assess its quality which could inform possible research scenarios. I looked at a sample of the more than 6 million polygons available for Chile, more specifically I mapped central and peripheral areas of Santiago on an interactive map to ease exploration.
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Bulding outlines extracted from satellite imagery (Microsoft)"}
+```{r echo = FALSE, out.width = '100%', fig.cap="Building outlines extracted from satellite imagery (Microsoft)"}
 knitr::include_graphics("img/footprints-s.png")
 ```
 
@@ -36,7 +36,7 @@ knitr::include_graphics("img/footprints-s.png")
 While the zipped file for Chile is ~500 MB, the unzipped version is a GeoJSON file of more than 2 GB. To facilitate handling these large amount of data I decided to set up and use a spatial database and query it using SQL. All the processing was conducted in RStudio supported by the packages `sf`, `DBI`, and `RPostgres`.
 
 ```{r setup, message=FALSE, warning=FALSE}
-knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE, fig.path="img/", dpi =100)
 library(tidyverse)
 library(sf)
 library(ggplot2)
@@ -113,7 +113,7 @@ st_point(x = c(-7866740.5160,-3931743.1159)) %>%
 rbind(scl_p, scl_p1, scl_p2) -> scl_s
 ```
 
-```{r dev.args = list(bg = 'transparent')}
+```{r dev.args = list(bg = 'transparent'), fig.cap="Cut-off study areas with relative equidistance from CBD (Santiago)"}
 #| message: false
 #| warning: false
 #| quiet: true
@@ -151,7 +151,7 @@ cl_comunas %>%
 # Read the unzipped file
 # cl <- st_read("./data_raw/Chile.geojsonl", quiet = TRUE)
 # cl <- st_read("./data_raw/Chile.gpkg", quiet = TRUE)
-cl <- readRDS("~/Documents/Q_GitHub/q-blog/posts/building-footprints/data_raw/Chile.rds")
+# cl <- readRDS("~/Documents/Q_GitHub/q-blog/posts/building-footprints/data_raw/Chile.rds")
 # Save an object to a file
 # saveRDS(cl, file = "./data_raw/Chile.rds")
 # st_write(cl, "data_raw/Chile.gpkg")
@@ -180,13 +180,13 @@ cl <- readRDS("~/Documents/Q_GitHub/q-blog/posts/building-footprints/data_raw/Ch
 # dbGetQuery(con, "SELECT schema_name
 #                  FROM information_schema.schemata;")
 
-# connect to schema
-# con <- dbConnect(RPostgres::Postgres(),
-#                  host = 'localhost', # host name, can be website/server
-#                  port = 5432, # default port of postgres
-#                  dbname = 'postgres', # name of database in postgres
-#                  user = 'postgres', # the default user
-#                  options="-c search_path=cl_build") # specify what schema to connect to
+#connect to schema
+con <- dbConnect(RPostgres::Postgres(),
+                 host = 'localhost', # host name, can be website/server
+                 port = 5432, # default port of postgres
+                 dbname = 'postgres', # name of database in postgres
+                 user = 'postgres', # the default user
+                 options="-c search_path=cl_build") # specify what schema to connect to
 
 # activate the PostGIS extension in postgres
 # dbSendQuery(con, "CREATE EXTENSION postgis SCHEMA cl_build;")
@@ -246,12 +246,12 @@ codigos_territoriales -> nm_comunas
 #   show_query()
 
 # Read with dplyr directly in database
-cl_tbl <- tbl(con, "cl_all_build")
-cl_nm <- tbl(con, "cl_comunas")
+# cl_tbl <- tbl(con, "cl_all_build")
+# cl_nm <- tbl(con, "cl_comunas")
 # Create query
-cl_nm %>%
-  filter(codigo_comuna == "13501") %>%
-  show_query()
+# cl_nm %>%
+#   filter(codigo_comuna == "13501") %>%
+#   show_query()
 ```
 
 ```{r}
@@ -270,8 +270,8 @@ cl_nm %>%
 #| include: false
 #| echo: false
 # select 13501 Melipilla codigo_comuna and write to table
-cl_comunas[cl_comunas$codigo_comuna == "13501",] %>%
-  st_geometry(.) -> cl_mel_g
+# cl_comunas[cl_comunas$codigo_comuna == "13501",] %>%
+#   st_geometry(.) -> cl_mel_g
 
 # print geometry
 # cl_mel_g[[1]]
@@ -299,6 +299,7 @@ cl_comunas[cl_comunas$codigo_comuna == "13501",] %>%
 #| include: false
 #| echo: false
 
+# print polygon as WKT
 scl_p1 %>%
   st_transform(., crs = "EPSG:4326") %>%
   st_geometry(.) -> scl_p1g
@@ -342,27 +343,25 @@ rbind(santiago, lapinta, colina) -> bp
 #| warning: false
 #| quiet: true
 #| include: false
-scl_sample2 %>%
+scl_sample1 %>%
   ggplot() +
-  geom_sf() +
+  geom_sf(lwd=0, fill="black") +
   theme_void()
 ```
 
-::: {.column-page}
-::: {.column width="33%"}
-![](img/colina.png)
+:::: {columns}
+::: {.column width="32%"}
+![Colina](img/colina.png)
 :::
-::: {.column width="33%"}
-![](img/stgo.png)
+::: {.column width="32%"}
+![Santiago](img/stgo.png)
 :::
-::: {.column width="33%"}
-![](img/lapinta.png)
+::: {.column width="32%"}
+![La Pintana](img/lapinta.png)
 :::
-:::  
+::::  
 
-<caption>Satellite/building-outlines overlay for Colina, Santiago and La Pintana</caption>  
-
-```{r}
+```{r }
 #| column: screen
 #| echo: false
 url_map <- "https://api.mapbox.com/styles/v1/npalomin/ckkfbcl5622tv17rzxz1lpt33/tiles/256/{z}/{x}/{y}@2x?access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g"
@@ -370,24 +369,24 @@ url_map <- "https://api.mapbox.com/styles/v1/npalomin/ckkfbcl5622tv17rzxz1lpt33/
 leaflet(scl_sample2) %>%
   addTiles(urlTemplate = url_map, group = "GreySat") %>%
   addProviderTiles(providers$Esri.WorldImagery, group = "Satellite") %>%
-  addPolygons(fillColor = NULL,
-              fillOpacity = 0,
+  addPolygons(fillColor = "grey",
+              fillOpacity = 0.2,
               stroke = TRUE,
               color = "yellow",
               weight = 1.5,
               group = "Colina",
               highlight = highlightOptions(fillOpacity = 0, weight = 2, opacity = 1, color = "cyan", bringToFront = TRUE, sendToBack = TRUE)) %>%
   addPolygons(data = scl_sample,
-              fillColor = NULL,
-              fillOpacity = 0,
+              fillColor = "grey",
+              fillOpacity = 0.2,
               stroke = TRUE,
               color = "yellow",
               weight = 1.5,
               group = "Santiago",
               highlight = highlightOptions(fillOpacity = 0, weight = 2, opacity = 1, color = "cyan", bringToFront = TRUE, sendToBack = TRUE)) %>%
   addPolygons(data = scl_sample1,
-              fillColor = NULL,
-              fillOpacity = 0,
+              fillColor = "grey",
+              fillOpacity = 0.2,
               stroke = TRUE,
               color = "yellow",
               weight = 1.5,
@@ -398,7 +397,9 @@ leaflet(scl_sample2) %>%
   hideGroup(c("Satellite"))
 ```
 
-The interactive map allows to compare the building outlines against satellite imagery available as a basemap. It can be observed that the AI mapping is quite good at detecting building footprints in the North and South periphery. However, in the presence of buildings that are in high proximity (La Pintana in the South), the outline drawn often does not differentiate between units. Meanwhile, at the centre where there are plenty of high-rises and taller buildings the outlines are occasionally absent or draw strange shapes. As Microsoft states '... the vast majority of cases the quality is at least as good as hand digitized buildings in OpenStreetMap. It is not perfect, particularly in dense urban areas but it provides good recall in rural areas'. It could be argued that the contribution of this global mapping effort is positive, in particular for cartographic-deprived areas. Moreover, like in the case of this exercise, interesting urban density metrics could be computed to compare and describe urban planing and design practice[^3]. I wpuld be expected as it is expressed graphically that the difference between affluent and deprived areas would be quite noteworthy.
+<br>
+
+The interactive map allows to compare the building outlines against satellite imagery available as a basemap. It can be observed that the AI mapping is quite good at detecting building footprints in the North and South periphery. However, in the presence of buildings that are in high proximity (La Pintana in the South), the outline drawn often does not differentiate between units. Meanwhile, at the centre where there are plenty of high-rises and more complex buildings the outlines are occasionally absent or draw strange shapes. As Microsoft states '... the vast majority of cases the quality is at least as good as hand digitized buildings in OpenStreetMap. It is not perfect, particularly in dense urban areas but it provides good recall in rural areas'. It could be argued that the contribution of this global mapping effort is positive, in particular for cartographic-deprived areas. Moreover, like in the case of this exercise, interesting urban density metrics could be computed to compare and describe urban planing and design practice[^3]. It could be expected as it is visualised in the interactive map, that the difference between affluent and deprived areas would be quite noteworthy.
 
 [^3]: See Ground Space Index that describes	the	amount of built ground in an area, and related work [Spacemate](http://arkitekturforskning.net/na/article/view/167)
 
@@ -426,7 +427,41 @@ The interactive map allows to compare the building outlines against satellite im
 # st_write(obj = cl_mel, 
 #          dsn = con, 
 #          Id(schema="cl_build", table = "cl_mel")) 
+
+# all buildings region 13
+# cl_comunas %>%
+#   filter(codigo_region == 13) %>%
+#   summarise() -> cl_13_g
+# 
+# # write table
+#  # st_write(obj = cl_13_g, 
+#  #         dsn = con,
+#  #         Id(schema="cl_build", table = "cl_13_g"))
+#  
+# st_read(con, query = "SELECT * FROM cl_all_build, cl_13_g WHERE ST_Intersects(cl_all_build.geom, cl_13_g.geometry);") -> cl_13
+#  
+# # write table region 13 buildings
+# st_write(obj = cl_13, 
+#          dsn = con,
+#          Id(schema="cl_build", table = "cl_13"))
+# st_write(cl_13, "data_raw/cl_13.gpkg")
 ```
+
+```{r dev.args = list(bg = 'transparent')}
+#| echo: false
+#| fig-cap: "1.3M building footprints for Santiago's region, Region Metropolitana"
+cl_13 <- st_read("data_raw/cl_13.gpkg", quiet = TRUE)
+
+cl_13 %>%
+  #sample_n(10000) %>%
+  ggplot() +
+  geom_sf(lwd=0.2) +
+  #geom_sf(data = cl_13_g, lwd = 0.5, fill=NA) +
+  theme_void() +
+  theme(panel.background = element_rect(fill = "transparent", colour = NA),
+        plot.background = element_rect(fill = "transparent", colour = NA))
+```
+
 
 ```{r}
 #| message: false
