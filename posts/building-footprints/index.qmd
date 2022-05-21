@@ -21,19 +21,19 @@ format:
 
 ### Building footprints at a global scale
  
-Often the pace of urbanisation is faster than the capacity that mapping instruments/agencies have to keep an updated record of urban expansion. Following the previous release of building footprints across different areas of the world [^1], a repository of 777M building footprints has been published in a GitHub repository organised by country [^2]. The purpose of this exercise is to visualise some of this data to assess its quality which could inform possible research scenarios. I looked at a sample of the more than 6 million polygons available for Chile, more specifically I mapped central and peripheral areas of Santiago.
+Often the pace of urbanisation is faster than the capacity that mapping instruments/agencies have to keep an updated record of urban expansion and growth. Following the previous release of building footprints across different areas of the world [^1], a repository of 777M building footprints has been published in a GitHub repository organised by country [^2]. The purpose of this exercise is to visualise some of this data to assess its quality which could inform possible research scenarios. I looked at a sample of the more than 6 million polygons available for Chile, more specifically I mapped central and peripheral areas of Santiago on an interactive map to ease exploration.
 
 ```{r echo = FALSE, out.width = '100%', fig.cap="Bulding outlines extracted from satellite imagery (Microsoft)"}
 knitr::include_graphics("img/footprints-s.png")
 ```
 
-[^1]: See Microsoft's (AI Assisted Mapping)[https://www.microsoft.com/en-us/maps/building-footprints]
+[^1]: See Microsoft's [AI Assisted Mapping](https://www.microsoft.com/en-us/maps/building-footprints)
 
-[^2]: See (repository)[https://github.com/microsoft/GlobalMLBuildingFootprints]
+[^2]: See [repository](https://github.com/microsoft/GlobalMLBuildingFootprints)
 
 ### 6 million polygons
 
-While the zipped file for Chile is ~500 MB, the unzipped version is a GeoJSON file of more than 2 GB. To facilitate handling these large ammount of data I decided to set up and use a spatial database and query it using SQL. All the processing was conducted in RStudio supported by the packages `sf`, `DBI`, and `RPostgres`.
+While the zipped file for Chile is ~500 MB, the unzipped version is a GeoJSON file of more than 2 GB. To facilitate handling these large amount of data I decided to set up and use a spatial database and query it using SQL. All the processing was conducted in RStudio supported by the packages `sf`, `DBI`, and `RPostgres`.
 
 ```{r setup, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
@@ -46,15 +46,17 @@ library(extrafont)
 library(patchwork)
 #install.packages("scico")
 library(scico)
+#install.packages("plotly")
 library(plotly)
 library(reactable)
-#install.packages("DBI")
+# install.packages("DBI", "RPostgres", "Chilemapas")
 library(DBI)
 #install.packages("RPostgres")
-library(RPostgres)
+#library(RPostgres)
 #install.packages("chilemapas")
 library(chilemapas)
 library(leaflet)
+#install.packages(c("leafgl", "leaflet.extras", "htmlwidgets"))
 library(leafgl)
 library(leaflet.extras)
 library(htmlwidgets)
@@ -62,7 +64,7 @@ library(htmlwidgets)
 
 ### Visualising footprints
 
-In order to have a close inspection of the correspondence between the vector building polygons and standard satellite imagery I decided to create an interactive map using `leaflet`. The three areas selected for inspection are shown in the map below covering the North, Centre and South of Santiago. The North periphery is know for the presence of suburban single-family houses organised in gated communities. The centre is still considered the civic centre of the capital. The South periphery is an area of high density of social housing that would be radically transformed by the forthcoming construction of a Metro line.
+In order to have a close inspection of the correspondence between the vector building polygons and standard satellite imagery I decided to create an interactive map using `leaflet`. The three areas selected for inspection are shown in the map below covering the North, Centre and South of Santiago. The North periphery (Colina) is known for the presence of affluent suburban single-family houses organised in gated communities. The centre (Santiago) is still considered the civic centre of the capital. The South periphery (La Pintana) is an area of high density of social housing that would be radically transformed by the forthcoming construction of a Metro line.
 
 ```{r}
 #| message: false
@@ -124,7 +126,7 @@ cl_comunas %>%
   filter(codigo_region == "13") %>%
   ggplot() +
   geom_sf(fill = NA, col = "grey", lwd = 0.4) +
-  geom_sf(data = scl_s, col = "tomato") +
+  geom_sf(data = scl_s, col = "tomato", fill = NA) +
   geom_sf_label(data = scl_s, aes(label = name), size = 2.5, alpha=0.5, vjust = 0.5, hjust = 0, nudge_x = 0.03) +
   theme_void() +
   theme(panel.background = element_rect(fill = "transparent", colour = NA),
@@ -165,11 +167,11 @@ cl <- readRDS("~/Documents/Q_GitHub/q-blog/posts/building-footprints/data_raw/Ch
 # ref: https://oliverstringham.com/blog/data-science-tutorials/setting-up-postgres-postgis-to-run-spatial-queries-in-r-tutorial/
 # ref: https://www.r-bloggers.com/2019/04/interact-with-postgis-from-r/
 # connect to postgres
-con <- dbConnect(RPostgres::Postgres(),
-                 host = 'localhost', # host name, can be website/server
-                 port = 5432, # default port of postgres
-                 dbname = 'postgres', # name of database in postgres
-                 user = 'postgres') # the default user
+# con <- dbConnect(RPostgres::Postgres(),
+#                  host = 'localhost', # host name, can be website/server
+#                  port = 5432, # default port of postgres
+#                  dbname = 'postgres', # name of database in postgres
+#                  user = 'postgres') # the default user
 
 # create schema
 # dbSendQuery(con, "CREATE SCHEMA cl_build;")
@@ -179,12 +181,12 @@ con <- dbConnect(RPostgres::Postgres(),
 #                  FROM information_schema.schemata;")
 
 # connect to schema
-con <- dbConnect(RPostgres::Postgres(),
-                 host = 'localhost', # host name, can be website/server
-                 port = 5432, # default port of postgres
-                 dbname = 'postgres', # name of database in postgres
-                 user = 'postgres', # the default user
-                 options="-c search_path=cl_build") # specify what schema to connect to
+# con <- dbConnect(RPostgres::Postgres(),
+#                  host = 'localhost', # host name, can be website/server
+#                  port = 5432, # default port of postgres
+#                  dbname = 'postgres', # name of database in postgres
+#                  user = 'postgres', # the default user
+#                  options="-c search_path=cl_build") # specify what schema to connect to
 
 # activate the PostGIS extension in postgres
 # dbSendQuery(con, "CREATE EXTENSION postgis SCHEMA cl_build;")
@@ -195,7 +197,7 @@ con <- dbConnect(RPostgres::Postgres(),
 #          Id(schema="cl_build", table = "cl_all_build"))
 
 # check tables on schema
-dbListTables(con)
+# dbListTables(con)
 ```
 
 ```{r}
@@ -238,7 +240,7 @@ codigos_territoriales -> nm_comunas
 #| include: false
 #| echo: false
 # 13501 Melipilla codigo_comuna
-cl_comunas[cl_comunas$codigo_comuna == "13501",]
+# cl_comunas[cl_comunas$codigo_comuna == "13501",]
 # cl %>%
 #   st_intersects(., cl_comunas[cl_comunas$codigo_comuna == "13501",]) %>%
 #   show_query()
@@ -258,7 +260,7 @@ cl_nm %>%
 #| quiet: true
 #| include: false
 #| echo: false
-dbListTables(con)
+# dbListTables(con)
 ```
 
 ```{r}
@@ -286,10 +288,9 @@ cl_comunas[cl_comunas$codigo_comuna == "13501",] %>%
 #| quiet: true
 #| include: false
 #| echo: false
-con %>%
-  dbListTables()
+# con %>%
+#   dbListTables()
 ```
-
 
 ```{r}
 #| message: false
@@ -357,9 +358,9 @@ scl_sample2 %>%
 ::: {.column width="33%"}
 ![](img/lapinta.png)
 :::
-:::
+:::  
 
-<caption>Satellite/building-outlines overlay for Colina, Santiago and La Pintana</caption>
+<caption>Satellite/building-outlines overlay for Colina, Santiago and La Pintana</caption>  
 
 ```{r}
 #| column: screen
@@ -397,6 +398,9 @@ leaflet(scl_sample2) %>%
   hideGroup(c("Satellite"))
 ```
 
+The interactive map allows to compare the building outlines against satellite imagery available as a basemap. It can be observed that the AI mapping is quite good at detecting building footprints in the North and South periphery. However, in the presence of buildings that are in high proximity (La Pintana in the South), the outline drawn often does not differentiate between units. Meanwhile, at the centre where there are plenty of high-rises and taller buildings the outlines are occasionally absent or draw strange shapes. As Microsoft states '... the vast majority of cases the quality is at least as good as hand digitized buildings in OpenStreetMap. It is not perfect, particularly in dense urban areas but it provides good recall in rural areas'. It could be argued that the contribution of this global mapping effort is positive, in particular for cartographic-deprived areas. Moreover, like in the case of this exercise, interesting urban density metrics could be computed to compare and describe urban planing and design practice[^3]. I wpuld be expected as it is expressed graphically that the difference between affluent and deprived areas would be quite noteworthy.
+
+[^3]: See Ground Space Index that describes	the	amount of built ground in an area, and related work [Spacemate](http://arkitekturforskning.net/na/article/view/167)
 
 ```{r}
 #| message: false
@@ -404,8 +408,8 @@ leaflet(scl_sample2) %>%
 #| quiet: true
 #| include: false
 #| echo: false
-st_read(con,
-        query = "SELECT * FROM cl_comunas WHERE codigo_comuna = '13501';")
+# st_read(con,
+#         query = "SELECT * FROM cl_comunas WHERE codigo_comuna = '13501';")
 ```
 
 ```{r}
@@ -416,12 +420,12 @@ st_read(con,
 #| echo: false
 # read buildings intersecting with table polygon Melipilla
 # https://gis.stackexchange.com/questions/131236/select-polygon-intersections-between-two-tables-with-no-common-key
-st_read(con, query = "SELECT * FROM cl_all_build, cl_mel_g WHERE ST_Intersects(cl_all_build.geom, cl_mel_g.geom);") -> cl_mel
-
-# write table
-st_write(obj = cl_mel, 
-         dsn = con, 
-         Id(schema="cl_build", table = "cl_mel")) 
+# st_read(con, query = "SELECT * FROM cl_all_build, cl_mel_g WHERE ST_Intersects(cl_all_build.geom, cl_mel_g.geom);") -> cl_mel
+# 
+# # write table
+# st_write(obj = cl_mel, 
+#          dsn = con, 
+#          Id(schema="cl_build", table = "cl_mel")) 
 ```
 
 ```{r}
