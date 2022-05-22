@@ -41,18 +41,10 @@ library(tidyverse)
 library(sf)
 library(ggplot2)
 library(ggthemes)
-library(gridExtra)
-library(extrafont)
-library(patchwork)
-#install.packages("scico")
-library(scico)
-#install.packages("plotly")
-library(plotly)
-library(reactable)
 # install.packages("DBI", "RPostgres", "Chilemapas")
 library(DBI)
 #install.packages("RPostgres")
-#library(RPostgres)
+library(RPostgres)
 #install.packages("chilemapas")
 library(chilemapas)
 library(leaflet)
@@ -64,7 +56,7 @@ library(htmlwidgets)
 
 ### Visualising footprints
 
-In order to have a close inspection of the correspondence between the vector building polygons and standard satellite imagery I decided to create an interactive map using `leaflet`. The three areas selected for inspection are shown in the map below covering the North, Centre and South of Santiago. The North periphery (Colina) is known for the presence of affluent suburban single-family houses organised in gated communities. The centre (Santiago) is still considered the civic centre of the capital. The South periphery (La Pintana) is an area of high density of social housing that would be radically transformed by the forthcoming construction of a Metro line.
+In order to have a close inspection of the correspondence between the vector building polygons and standard satellite imagery I decided to create an interactive map using `leaflet`. The three areas selected for inspection are shown in the map below covering the North, Centre and South of Santiago. The North periphery (Colina) is known for the presence of affluent suburban single-family houses organised in gated communities. The centre (Santiago) is still considered the civic centre of the capital. The South periphery (La Pintana) is an area of high density of social housing that will be radically transformed by the forthcoming construction of a Metro line.
 
 ```{r}
 #| message: false
@@ -399,7 +391,7 @@ leaflet(scl_sample2) %>%
 
 <br>
 
-The interactive map allows to compare the building outlines against satellite imagery available as a basemap. It can be observed that the AI mapping is quite good at detecting building footprints in the North and South periphery. However, in the presence of buildings that are in high proximity (La Pintana in the South), the outline drawn often does not differentiate between units. Meanwhile, at the centre where there are plenty of high-rises and more complex buildings the outlines are occasionally absent or draw strange shapes. As Microsoft states '... the vast majority of cases the quality is at least as good as hand digitized buildings in OpenStreetMap. It is not perfect, particularly in dense urban areas but it provides good recall in rural areas'. It could be argued that the contribution of this global mapping effort is positive, in particular for cartographic-deprived areas. Moreover, like in the case of this exercise, interesting urban density metrics could be computed to compare and describe urban planing and design practice[^3]. It could be expected as it is visualised in the interactive map, that the difference between affluent and deprived areas would be quite noteworthy.
+The interactive map allows to compare the building outlines against satellite imagery available as a basemap. It can be observed that the AI mapping is quite good at detecting building footprints in the North and South periphery. However, in the presence of buildings that are in high proximity (La Pintana in the South), the outline drawn often does not differentiate between units. Meanwhile, at the centre where there are plenty of high-rises and more complex buildings the outlines are occasionally absent or draw strange shapes. As Microsoft states '... the vast majority of cases the quality is at least as good as hand digitized buildings in OpenStreetMap. It is not perfect, particularly in dense urban areas but it provides good recall in rural areas'. It could be argued that the contribution of this global mapping effort is valuable, in particular for cartographic-deprived areas. Moreover, like in the case of this exercise, interesting urban density metrics could be computed to compare and describe urban planing and design practice[^3]. For example, it could be expected from the areas visualised in the interactive map, that the difference of open space metrics between affluent and deprived areas would be quite noteworthy.
 
 [^3]: See Ground Space Index that describes	the	amount of built ground in an area, and related work [Spacemate](http://arkitekturforskning.net/na/article/view/167)
 
@@ -429,9 +421,9 @@ The interactive map allows to compare the building outlines against satellite im
 #          Id(schema="cl_build", table = "cl_mel")) 
 
 # all buildings region 13
-# cl_comunas %>%
-#   filter(codigo_region == 13) %>%
-#   summarise() -> cl_13_g
+cl_comunas %>%
+  filter(codigo_region == 13) %>%
+  summarise() -> cl_13_g
 # 
 # # write table
 #  # st_write(obj = cl_13_g, 
@@ -452,11 +444,20 @@ The interactive map allows to compare the building outlines against satellite im
 #| fig-cap: "1.3M building footprints for Santiago's region, Region Metropolitana"
 cl_13 <- st_read("data_raw/cl_13.gpkg", quiet = TRUE)
 
+
+# # write table region 13 buildings
+# st_write(obj = cl_13,
+#          dsn = con,
+#          Id(schema="cl_build", table = "cl_13"))
+
+# con %>%
+#   dbListTables()
+
 cl_13 %>%
   #sample_n(10000) %>%
   ggplot() +
   geom_sf(lwd=0.2) +
-  #geom_sf(data = cl_13_g, lwd = 0.5, fill=NA) +
+  geom_sf(data = cl_13_g, lwd = 0.2, fill=NA) +
   theme_void() +
   theme(panel.background = element_rect(fill = "transparent", colour = NA),
         plot.background = element_rect(fill = "transparent", colour = NA))
