@@ -23,12 +23,11 @@ format:
 
 The amount of space designated for footways and carriageways is a crucial street design parameter that can affect the streets' environmental quality. It could be expected that streets with higher pedestrian activity would have wider pavements. To a certain extent this is confirmed by the greater association that exists between central streets and streets with wider pavements in London[^1]. Provided the width of streets is dictated by land ownership structure which are difficult to transform, the relationship between footway and carriageway street width is a critical parameter for streetspace reallocation interventions. 
 
-[^1]: See chapter 4 of PhD thesis (Rethinking Streets: a study of streetspace allocation metrics and street networks in London
-)[https://discovery.ucl.ac.uk/id/eprint/10127358/]
+[^1]: See chapter 4 of PhD thesis [Rethinking Streets: a study of streetspace allocation metrics and street networks in London](https://discovery.ucl.ac.uk/id/eprint/10127358/)
 
 This exercise examines the streetspace allocation data set published for London [^2] by creating a streetspace index that quantifies footway/carriageway relationships
 
-[^2]: See (repository)[https://zenodo.org/record/3783807#.Ynpu_hPMLyI] and technical specifications
+[^2]: See [repository](https://zenodo.org/record/3783807#.Ynpu_hPMLyI) and technical specifications
 
 ### The streetspace allocation dataset for London
 
