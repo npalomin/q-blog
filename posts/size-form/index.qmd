@@ -21,7 +21,7 @@ format:
 
 ### Comparing size and form for understanding urban space
  
-Comparing things is a natural first step for categorising. And categorising by size and shape enhances the understanding of the spatial environments we live in while enabling its exploration. As such, identifying, naming and classifying is a fundamental tool in science[^1]. In urban planning and design practice is quite common to refer to the dimension of and shape of urban landmarks and patterns to obtain orientation. In the speculative redevelopment of a 50-acre-site the researchers compare the proposed 'urban rooms' with open spaces in the Bloomsbury area of London [^2].
+Comparing things is a natural first step for categorising. And categorising by size and shape enhances the understanding of the spatial environments we live in while enabling its exploration. As such, identifying, naming and classifying is a fundamental tool in science[^1]. In urban planning and design practice is quite common to refer to the dimension and shape of urban landmarks and patterns to obtain orientation. For instance, in the speculative redevelopment of a 50-acre-site the researchers compare the proposed 'urban rooms' with open spaces in the Bloomsbury area of London [^2].
 
 ```{r echo = FALSE, out.width = '100%', fig.cap="Speculative drawings for urban redevelopment (2)"}
 knitr::include_graphics("img/rsq-rlsq.png")
@@ -31,13 +31,13 @@ knitr::include_graphics("img/rsq-rlsq.png")
 knitr::include_graphics("img/rsq-rlsq.png")
 ```
 
-Moreover, the large availability of urban data has encourage quantitative research for the classification of cities[^3]. 
+Moreover, the large availability of urban data has encouraged quantitative research for the classification of cities[^3]. 
 
 ```{r echo = FALSE, out.width = '100%', fig.cap="A classification of cities based on block size and shape (3)"}
 knitr::include_graphics("img/a-typo.png")
 ```
 
-Cities are complex entities which understanding is facilitated by urban structure representations at multiple scales. With the purpose of visually exploring places in any location across the world, the [size & form](https://npalomin.shinyapps.io/size-form/) webapp allows the comparison side-by-side at multiple levels of detail and layers of information. How does the Barcelona block compares to the Manhattan block?, Is Hyde Park bigger than Central Park, London than New York?, How big is ... in relation to ...?
+Cities are complex entities which understanding is facilitated by urban structure representations at multiple scales. With the purpose of visually exploring places in any location across the world, the [size & form](https://npalomin.shinyapps.io/size-form/) webapp allows the comparison side-by-side at multiple levels of detail and layers of information. How does the Barcelona block compares to the Manhattan block?, Is Hyde Park bigger than Central Park, London than New York?, How big is `x` in relation to `y`?
 
 [^1]: See Wellcome Collection's [Animal. Vegetable. Mineral](https://www.itsnicethat.com/articles/animal-vegetable-mineral-wellcome-collection-making-nature-281016)
 
@@ -47,7 +47,7 @@ Cities are complex entities which understanding is facilitated by urban structur
 
 ### The interactive maps
 
-The webapp is built using `shiny`, and `leaflet` with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen[^4]). To compare between __any__ place worldwide the `lat,lng` pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from [Google Maps](https://support.google.com/maps/answer/18539?hl=en-GB&co=GENIE.Platform%3DDesktop). Then the level of zoom has to be set (e.g. 19 for an ~ scale of 1:1000). To enhance the visual exploration the interactive maps have typical funcionalities of zoom (synchronised) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.
+The webapp is built in R using `shiny`, and `leaflet` with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen[^4]). To compare between __any__ place worldwide, the `lat,lng` pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from [Google Maps](https://support.google.com/maps/answer/18539?hl=en-GB&co=GENIE.Platform%3DDesktop). Then, the level of zoom has to be set (e.g. 19 for a scale of ~ 1:1000). To enhance the visual exploration the interactive maps have typical navigational functionalities of zoom (synchronised for both panels) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.
 
 [^4]: See OSM [article](https://wiki.openstreetmap.org/wiki/Zoom_levels)
 
@@ -57,6 +57,8 @@ The layers described in the table and visualised below can support the complex a
 
 ```{r}
 #| echo: false
+#| message: false
+#| warning: false
 #| tbl-cap: "Travel by Bicycle"
 
 # https://github.com/npalomin/formatlas/tree/main/shiny
@@ -66,7 +68,7 @@ library(kableExtra)
 suta <- data.frame("Place 1" = c("51.5137,-0.0981"), 
                    "Place 2" = c("51.5137,-0.0981"),
                    "Data Layer" = c("satellite"),
-                   "Description" = c("Manhattan vs Barcelona block"))
+                   "Description" = c("Manhattan's vs Barcelona's block"))
 
 head(suta) %>%
   kbl(col.names = c("Place 1", "Place 2", "Data layer", "Description")) %>%
