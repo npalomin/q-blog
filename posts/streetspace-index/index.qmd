@@ -4,7 +4,8 @@ subtitle: |
   How can pavement and carriageway widths explain street design?
 author:
   name: Nicolas Palominos
-citation: true
+citation:
+  url: https://nicolaspalominos.netlify.app/posts/streetspace-index/
 date: "2022-05"
 date-format: "MMMM, YYYY"
 categories: [r, streetspace, sf]

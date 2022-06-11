@@ -4,7 +4,8 @@ subtitle: |
   A webapp for comparing urban places at multiple scales
 author:
   name: Nicolas Palominos
-citation: true
+citation:
+  url: https://nicolaspalominos.netlify.app/posts/size-form/
 date: "2022-06"
 date-format: "MMMM, YYYY"
 categories: [r, urban form, shiny, osm]
