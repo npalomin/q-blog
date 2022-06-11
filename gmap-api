@@ -1,7 +1,0 @@
-
-# Satellite
-
-https://maps.googleapis.com/maps/api/staticmap?center=51.593384,-0.168785&zoom=20&size=600x600&maptype=satellite&key=AIzaSyALyZ6RddpQeyvjzyNakVxKKOeJcksXTSA
-
-# Street View
-https://maps.googleapis.com/maps/api/streetview?size=600x600&location=51.593384,-0.168785&fov=80&heading=240&pitch=0&key=AIzaSyC-v_x-RZvp_a545Q-XCRf_NGwEo9X7mBI
