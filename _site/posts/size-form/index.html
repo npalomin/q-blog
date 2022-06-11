@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-0.9.308">
+<meta name="generator" content="quarto-0.9.309">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -60,7 +60,7 @@ ul.task-list{list-style: none;}
 
 <link rel="stylesheet" href="../../styles.css">
 <meta name="twitter:title" content="urban data notebook - Size &amp; Form">
-<meta name="twitter:image" content="image.png">
+<meta name="twitter:image" content="img/bcn-nyc.png">
 <meta name="twitter:creator" content="@npalomin">
 <meta name="twitter:card" content="summary_large_image">
 </head>
@@ -134,7 +134,7 @@ ul.task-list{list-style: none;}
       <div>
       <div class="quarto-title-meta-heading">Published</div>
       <div class="quarto-title-meta-contents">
-        <p class="date">May, 2022</p>
+        <p class="date">June, 2022</p>
       </div>
     </div>
       
@@ -151,6 +151,7 @@ ul.task-list{list-style: none;}
   <li><a href="#comparing-size-and-form-for-understanding-urban-space" id="toc-comparing-size-and-form-for-understanding-urban-space" class="nav-link active" data-scroll-target="#comparing-size-and-form-for-understanding-urban-space">Comparing size and form for understanding urban space</a></li>
   <li><a href="#the-interactive-maps" id="toc-the-interactive-maps" class="nav-link" data-scroll-target="#the-interactive-maps">The interactive maps</a></li>
   <li><a href="#data-layers" id="toc-data-layers" class="nav-link" data-scroll-target="#data-layers">Data layers</a></li>
+  <li><a href="#layers-sources" id="toc-layers-sources" class="nav-link" data-scroll-target="#layers-sources">Layers sources</a></li>
   </ul>
 </nav>
 </nav>
@@ -158,20 +159,20 @@ ul.task-list{list-style: none;}
     <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
     </div>
 <!-- main -->
-<main class="content quarto-banner-title-block" id="quarto-document-content">
+<main class="content quarto-banner-title-block page-columns page-full" id="quarto-document-content">
 
 
 
 
 <!--------------- post ----------------->
-<section id="comparing-size-and-form-for-understanding-urban-space" class="level3">
+<section id="comparing-size-and-form-for-understanding-urban-space" class="level3 page-columns page-full">
 <h3 class="anchored" data-anchor-id="comparing-size-and-form-for-understanding-urban-space">Comparing size and form for understanding urban space</h3>
-<p>Comparing things is a natural first step for categorising. And categorising by size and shape enhances the understanding of the spatial environments we live in while enabling its exploration. As such, identifying, naming and classifying is a fundamental tool in science<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. In urban planning and design practice is quite common to refer to the dimension of and shape of urban landmarks and patterns to obtain orientation. In the speculative redevelopment of a 50-acre-site the researchers compare the proposed ‘urban rooms’ with open spaces in the Bloomsbury area of London <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
-<div class="cell">
-<div class="cell-output-display">
+<p>Comparing things is a natural first step for categorising. And categorising by size and shape enhances the understanding of the spatial environments we live in while enabling its exploration. As such, identifying, naming and classifying is a fundamental tool in science<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. In urban planning and design practice is quite common to refer to the dimension and shape of urban landmarks and patterns to obtain orientation. For instance, in the speculative redevelopment of a 50-acre-site the researchers compare the proposed ‘urban rooms’ with open spaces in the Bloomsbury area of London <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a>.</p>
+<div class="cell page-columns page-full">
+<div class="cell-output-display column-page">
 <div class="quarto-figure quarto-figure-center">
 <figure class="figure">
-<p><img src="img/rsq-rlsq.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p><img src="img/spec.png" class="img-fluid figure-img" style="width:100.0%"></p>
 <p></p><figcaption aria-hidden="true" class="figure-caption">Speculative drawings for urban redevelopment (2)</figcaption><p></p>
 </figure>
 </div>
@@ -187,7 +188,7 @@ ul.task-list{list-style: none;}
 </div>
 </div>
 </div>
-<p>Moreover, the large availability of urban data has encourage quantitative research for the classification of cities<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
+<p>Moreover, the large availability of urban data has encouraged quantitative research for the classification of cities<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a>.</p>
 <div class="cell">
 <div class="cell-output-display">
 <div class="quarto-figure quarto-figure-center">
@@ -198,64 +199,156 @@ ul.task-list{list-style: none;}
 </div>
 </div>
 </div>
-<p>Cities are complex entities which understanding is facilitated by urban structure representations at multiple scales. With the purpose of visually exploring places in any location across the world, the <a href="https://npalomin.shinyapps.io/size-form/">size &amp; form</a> webapp allows the comparison side-by-side at multiple levels of detail and layers of information. How does the Barcelona block compares to the Manhattan block?, Is Hyde Park bigger than Central Park, London than New York?, How big is … in relation to …?</p>
+<p>Cities are complex entities which understanding is facilitated by urban structure representations at multiple scales. With the purpose of visually exploring places in any location across the world, the <a href="https://npalomin.shinyapps.io/size-form/">size &amp; form</a> webapp allows the comparison side-by-side at multiple levels of detail and layers of information. How does the Barcelona block compares to the Manhattan block?, Is Hyde Park bigger than Central Park, London than New York?, How big is <code>x</code> in relation to <code>y</code>?</p>
 </section>
 <section id="the-interactive-maps" class="level3">
 <h3 class="anchored" data-anchor-id="the-interactive-maps">The interactive maps</h3>
-<p>The webapp is built using <code>shiny</code>, and <code>leaflet</code> with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>). To compare between <strong>any</strong> place worldwide the <code>lat,lng</code> pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from <a href="https://support.google.com/maps/answer/18539?hl=en-GB&amp;co=GENIE.Platform%3DDesktop">Google Maps</a>. Then the level of zoom has to be set (e.g.&nbsp;19 for an ~ scale of 1:1000). To enhance the visual exploration the interactive maps have typical funcionalities of zoom (synchronised) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.</p>
+<p>The webapp is built in R using <code>shiny</code>, and <code>leaflet</code> with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a>). To compare between <strong>any</strong> place worldwide, the <code>lat,lng</code> pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from <a href="https://support.google.com/maps/answer/18539?hl=en-GB&amp;co=GENIE.Platform%3DDesktop">Google Maps</a>. Then, the level of zoom has to be set (e.g.&nbsp;19 for a scale of ~ 1:1000). To enhance the visual exploration the interactive maps have typical navigational functionalities of zoom (synchronised for both panels) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.</p>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/navo-z.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">size&amp;form app with the Piazza Navona vs El Zocalo example provided</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
 </section>
 <section id="data-layers" class="level3">
 <h3 class="anchored" data-anchor-id="data-layers">Data layers</h3>
 <p>The layers described in the table and visualised below can support the complex and multidimensional nature of planning and design tasks than consider the examination of size, grain, urban fabric, urban functions, street pattern, urban footprint and population density.</p>
 <div class="cell">
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'dplyr'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following objects are masked from 'package:stats':
-
-    filter, lag</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following objects are masked from 'package:base':
-
-    intersect, setdiff, setequal, union</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>Warning: package 'kableExtra' was built under R version 4.1.1</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>
-Attaching package: 'kableExtra'</code></pre>
-</div>
-<div class="cell-output cell-output-stderr">
-<pre><code>The following object is masked from 'package:dplyr':
-
-    group_rows</code></pre>
-</div>
 <div class="cell-output-display">
-<table class=" lightable-paper lightable-hover" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;"><caption>Travel by Bicycle</caption>
+<table class=" lightable-paper lightable-hover" style="font-family: &quot;Arial Narrow&quot;, arial, helvetica, sans-serif; width: auto !important; margin-left: auto; margin-right: auto;"><caption>Comparing places</caption>
  <thead>
   <tr>
    <th style="text-align:left;"> Place 1 </th>
    <th style="text-align:left;"> Place 2 </th>
+   <th style="text-align:left;"> Zoom level </th>
    <th style="text-align:left;"> Data layer </th>
    <th style="text-align:left;"> Description </th>
   </tr>
  </thead>
 <tbody>
   <tr>
-   <td style="text-align:left;"> 51.5137,-0.0981 </td>
-   <td style="text-align:left;"> 51.5137,-0.0981 </td>
+   <td style="text-align:left;"> 41.3864, 2.1584 </td>
+   <td style="text-align:left;"> 40.7590, -73.9873 </td>
+   <td style="text-align:left;"> 18 </td>
    <td style="text-align:left;"> satellite </td>
-   <td style="text-align:left;"> Manhattan vs Barcelona block </td>
+   <td style="text-align:left;"> Barcelona's vs Manhattan's block </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> -34.6039,-58.3973 </td>
+   <td style="text-align:left;"> 2.0502,45.3220 </td>
+   <td style="text-align:left;"> 16 </td>
+   <td style="text-align:left;"> streets </td>
+   <td style="text-align:left;"> Buenos Aires' vs Mogadishu's (Somalia) grids </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48.8803,2.3552 </td>
+   <td style="text-align:left;"> -23.5616,-46.6561 </td>
+   <td style="text-align:left;"> 18 </td>
+   <td style="text-align:left;"> OSM </td>
+   <td style="text-align:left;"> Paris Gare du Nord vs Av Paulista SP </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 45.4377,12.3340 </td>
+   <td style="text-align:left;"> 22.3152,114.1664 </td>
+   <td style="text-align:left;"> 17 </td>
+   <td style="text-align:left;"> buildings </td>
+   <td style="text-align:left;"> Venice vs Hong Kong building footprints </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 51.2725,3.6309 </td>
+   <td style="text-align:left;"> 24.2001,113.3178 </td>
+   <td style="text-align:left;"> 8 </td>
+   <td style="text-align:left;"> At night </td>
+   <td style="text-align:left;"> Benelux vs Pearl River Delta regions </td>
+  </tr>
+  <tr>
+   <td style="text-align:left;"> 48.3662,13.1379 </td>
+   <td style="text-align:left;"> 25.9953,93.5242 </td>
+   <td style="text-align:left;"> 4 </td>
+   <td style="text-align:left;"> Density </td>
+   <td style="text-align:left;"> Density in EU-NorthAfrica vs India-China </td>
   </tr>
 </tbody>
 </table>
 
 </div>
 </div>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/bcn-nyc.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Barcelona’s vs Manhattan’s block</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/bsas-mog.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Buenos Aires’ vs Mogadishu’s (Somalia) grids</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/gare-sp.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Paris Gare du Nord vs Av Paulista SP</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/ven-hk.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Venice vs Hong Kong building footprints</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/ben-prd.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Benelux vs Pearl River Delta regions</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<div class="cell">
+<div class="cell-output-display">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/eu-ich.png" class="img-fluid figure-img" style="width:100.0%"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Density in EU-NorthAfrica vs India-China</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="layers-sources" class="level3">
+<h3 class="anchored" data-anchor-id="layers-sources">Layers sources</h3>
+<ul>
+<li><a href="http://leaflet-extras.github.io/leaflet-providers/preview/index.html#filter=Esri.WorldImagery">satellite</a></li>
+<li><a href="https://api.mapbox.com/styles/v1/npalomin/cl470svwa001c14pk32hwdp8w.html?title=view&amp;access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g&amp;zoomwheel=true&amp;fresh=true#11.22/51.5154/-0.1146">streets (OSM)</a></li>
+<li><a href="https://leaflet-extras.github.io/leaflet-providers/preview/#filter=OpenStreetMap.Mapnik">OSM</a></li>
+<li><a href="https://api.mapbox.com/styles/v1/npalomin/cl472rxun002g15p63h8wjmmv.html?title=view&amp;access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g&amp;zoomwheel=true&amp;fresh=true#15.67/37.755238/-122.434872">buildings (OSM)</a></li>
+<li><a href="http://leaflet-extras.github.io/leaflet-providers/preview/index.html#filter=NASAGIBS.ViirsEarthAtNight2012">at night</a></li>
+<li><a href="https://sedac.ciesin.columbia.edu/maps/services#Gridded%20Population%20of%20the%20World">density</a></li>
+</ul>
 
 
 </section>
@@ -272,11 +365,11 @@ Attaching package: 'kableExtra'</code></pre>
 </section><section class="quarto-appendix-contents"><h2 class="anchored quarto-appendix-heading">Citation</h2><div><div class="quarto-appendix-secondary-label">BibTeX citation:</div><pre class="sourceCode code-with-copy quarto-appendix-bibtex"><code class="sourceCode bibtex">@online{palominos2022,
   author = {Nicolas Palominos},
   title = {Size \&amp; {Form}},
-  date = {2022-05},
+  date = {2022-06},
   langid = {en}
 }
 </code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre><div class="quarto-appendix-secondary-label">For attribution, please cite this work as:</div><div id="ref-palominos2022" class="csl-entry quarto-appendix-citeas" role="doc-biblioentry">
-Nicolas Palominos. 2022. <span>“Size &amp; Form.”</span> May 2022.
+Nicolas Palominos. 2022. <span>“Size &amp; Form.”</span> June 2022.
 </div></div></section></div></main> <!-- /main -->
 <script type="application/javascript">
 window.document.addEventListener("DOMContentLoaded", function (event) {
