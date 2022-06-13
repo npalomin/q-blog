@@ -51,8 +51,8 @@ Cities are complex entities which understanding is facilitated by urban structur
 
 The webapp is built in R using `shiny`, and `leaflet` with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen[^4]). To compare between __any__ place worldwide, the `lat,lng` pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from [Google Maps](https://support.google.com/maps/answer/18539?hl=en-GB&co=GENIE.Platform%3DDesktop). Then, the level of zoom has to be set (e.g. 19 for a scale of ~ 1:1000). To enhance the visual exploration the interactive maps have typical navigational functionalities of zoom (synchronised for both panels) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.
 
-```{r echo = FALSE, out.width = '100%', fig.cap="size&form app with the Piazza Navona vs El Zocalo example provided"}
-knitr::include_graphics("img/navo-z.png")
+```{r echo = FALSE, out.width = '100%', fig.cap="size & form app interaction with the Piazza Navona vs El Zocalo example"}
+knitr::include_graphics("img/size&form.gif")
 ```
 
 [^4]: See OSM [article](https://wiki.openstreetmap.org/wiki/Zoom_levels)
