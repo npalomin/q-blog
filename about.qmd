@@ -48,3 +48,21 @@ I see myself in the face of the challenge of making better cities as both 'urban
 | The Comptroller General of the Republic of Chile | Designer and Analyst                                   | 10.2009 - 08.2016 |
 | Ministry of Housing and Planning                 | Project Manager & Designer                             | 08.2006 - 08.2007 |
 :::
+
+## Research Findings/Interests
+
+My PhD dissertation ["Rethinking Streets: a study of streetspace allocation metrics and street networks in London"](https://discovery.ucl.ac.uk/id/eprint/10127358/) argues that streetspace allocation is a key parameter of street design and provides both a methodology for streetspace allocation analysis citywide, and quantitative evidence that confirm the predominance of space allocated for vehicular transport over pedestrian uses in a case study of London. The fine-grain physical metrics analysed, not only can be useful to tackle a wide range of contemporary street related questions from urban environmental quality to the adoption of new technologies but also offer alternative analytical methods for street research, planning and design.
+
+"From different perspectives, streets are considered fundamental components of urban form, urban transport and urban life. As is typically the case of complex systems like cities, these urban factors are varying simultaneously and interconnected as a functioning city system. The understanding of each of these factors in isolation would only provide a partial picture of the workings of the street system, so the challenge is in reviewing how they are combined together. A fourth factor of relevance to understanding streets and streetspace, which keeps this relationship evolving, is the development of new technologies that often influence urban transportation first but can have lasting effects on the other factors" (p 14).
+
+[^1]: Palominos, N (2021) Rethinking Streets: a study of streetspace allocation metrics and street networks in London, Doctoral thesis, UCL (University College London). Doctoral. UCL (University College London). Available at: https://discovery.ucl.ac.uk/id/eprint/10127358/.
+
+```{r echo = FALSE, out.width = '70%', fig.align='center'}
+knitr::include_graphics("img/diagram1.png")
+```
+
+"There is a general agreement among scholars that streets are an important determinant of the functioning of urban systems. Nevertheless, streets take this relevant condition not only by historical evolution but most importantly by design. Given the explosive post-industrial global urbanisation it can be conjectured that most streets of today were designed and built following functionalist principles of traffic movement efficiency that profoundly impacted the shape and vitality of cities, which has been termed a disurban legacy. It could be argued, however, that these principles no longer seem to fit with current urban mobility systems and urban quality of life aspirations. Moreover, they are largely contrary to sustainable urban development. An important design problem arises from the inherited conditions that shaped not only the physical organisation of streets but also the spatial configuration of street systems. The design constraints are defined by both the endurance of street layouts, due to the rigidity of land ownership structures, and by the establishment of land-use patterns based on automobile-dependency. All things considered, streetspace allocation turns out to be a crucial factor for street adaptation to new urban functions that result from the development of new technologies affecting urban mobility in particular" (p 59)[^1].
+
+```{r echo = FALSE, out.width = '70%', fig.align='center'}
+knitr::include_graphics("img/diagram3.png")
+```
