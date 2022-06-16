@@ -57,12 +57,12 @@ My PhD dissertation ["Rethinking Streets: a study of streetspace allocation metr
 
 [^1]: Palominos, N (2021) Rethinking Streets: a study of streetspace allocation metrics and street networks in London, Doctoral thesis, UCL (University College London). Doctoral. UCL (University College London). Available at: https://discovery.ucl.ac.uk/id/eprint/10127358/.
 
-```{r echo = FALSE, out.width = '70%', fig.align='center'}
+```{r echo = FALSE, out.width = '80%', fig.align='center'}
 knitr::include_graphics("img/diagram1.png")
 ```
 
 "There is a general agreement among scholars that streets are an important determinant of the functioning of urban systems. Nevertheless, streets take this relevant condition not only by historical evolution but most importantly by design. Given the explosive post-industrial global urbanisation it can be conjectured that most streets of today were designed and built following functionalist principles of traffic movement efficiency that profoundly impacted the shape and vitality of cities, which has been termed a disurban legacy. It could be argued, however, that these principles no longer seem to fit with current urban mobility systems and urban quality of life aspirations. Moreover, they are largely contrary to sustainable urban development. An important design problem arises from the inherited conditions that shaped not only the physical organisation of streets but also the spatial configuration of street systems. The design constraints are defined by both the endurance of street layouts, due to the rigidity of land ownership structures, and by the establishment of land-use patterns based on automobile-dependency. All things considered, streetspace allocation turns out to be a crucial factor for street adaptation to new urban functions that result from the development of new technologies affecting urban mobility in particular" (p 59)[^1].
 
-```{r echo = FALSE, out.width = '70%', fig.align='center'}
+```{r echo = FALSE, out.width = '80%', fig.align='center'}
 knitr::include_graphics("img/diagram3.png")
 ```
