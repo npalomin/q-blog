@@ -1,0 +1,446 @@
+---
+title: "Street grids"
+subtitle: |
+  Visualising neighbourhoods from street orientation
+author:
+  name: Nicolas Palominos
+citation:
+  url: https://nicolaspalominos.netlify.app/posts/street-grids/
+date: "2022-08"
+date-format: "MMMM, YYYY"
+categories: [r, urban form, grids, osm]
+image: "img/bcn-nyc.png"
+format: 
+  html:
+    code-fold: true
+    toc: true
+    toc-title: Contents
+    toc-location: left
+---
+
+<!--------------- post ----------------->
+
+```{r setup, message=FALSE, warning=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(pct)
+library(stplanr)
+library(tidyverse)
+library(janitor)
+library(sf)
+library(lwgeom)
+library(sfnetworks)
+library(tidygraph)
+library(ggplot2)
+library(extrafont)
+library(patchwork)
+library(osmextract)
+library(geosphere)
+library(RColorBrewer)
+#install.packages("rcartocolor")
+library(rcartocolor)
+```
+
+```{r setup, message=FALSE, warning=FALSE}
+# check/create Output directory
+mainDir <- getwd()
+subDir <- paste0("-osm-data")
+if (file.exists(subDir)){
+    setwd(file.path(mainDir))
+} else {
+    dir.create(file.path(mainDir, subDir))
+    setwd(file.path(mainDir))
+}
+```
+
+```{r message=FALSE, warning=FALSE}
+# get points grom google spreadsheet
+path <- 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRywtZWBYrE0mtCEjsanD_IswTid2v8AoOT0D7RerV8G7tyNMxx0GvbVM6E8zH9tYkFzxaRRSczkIPv/pub?gid=0&single=true&output=csv'
+cp <- read_csv(path)
+
+# convert points to sf objects
+cp %>%
+  mutate(lat = str_split_fixed(cp$latlng, ",", 2)[,1],
+         lng = str_split_fixed(cp$latlng, ",", 2)[,2],
+         lat = as.numeric(lat),
+         lng = as.numeric(lng),
+         name = str_to_title(name)) %>%
+  st_as_sf(coords = c("lng","lat")) %>%
+  st_set_crs(4326) -> cpsf
+
+# function to convert sf points to bboxes
+# define dataframe
+df <- cpsf
+# define keys
+# df <- df %>%
+#   filter(name %in% c("barcelona","london"))
+
+b_list <- list()
+for (p in 1:nrow(df)) {
+  # define buffer distance
+  d <- 5000
+  
+  df %>%
+    slice(p) %>%
+    st_transform(3857) %>%
+    st_buffer(.,d) %>%
+    st_bbox() %>%
+    st_as_sfc() %>%
+    st_as_sf() -> b_list[p]
+}
+```
+
+```{r}
+mapview::mapview(b_list[[1]]) + mapview::mapview(b_list[[2]]) + mapview::mapview(b_list[[3]])
+```
+
+```{r}
+# download osm data
+# check/create Output directory
+mainDir <- getwd()
+subDir <- paste0("osm-data")
+if (file.exists(subDir)){
+    setwd(file.path(mainDir))
+} else {
+    dir.create(file.path(mainDir, subDir))
+    setwd(file.path(mainDir))
+}
+```
+
+
+
+```{r}
+# get data
+# Download the data to osm-data folder.
+
+# cpsf$name[1]
+# 
+# oe_get(cpsf$name[1], boundary = sbox, download_directory = subDir, stringsAsFactors = FALSE, download_only = TRUE, skip_vectortranslate = TRUE, boundary_type = "clipsrc")
+# 
+# oe_get(cpsf$name[1], boundary = sbox, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc")
+# 
+# lgeof <- st_read("/private/var/folders/nw/3_7tcnfd3sd0mzpcjkxljc5h0000gq/T/RtmptwZArl/geofabrik_London.gpkg")
+
+# library(dbplyr)
+# 
+# mf <- memdb_frame(x = 1, y = 2)
+# mf
+# 
+# hosmsf %>%
+#   st_drop_geometry() %>%
+#   memdb_frame() %>%
+#   filter(highway %in% c("NA")) %>%
+#   show_query()
+# 
+# # query
+# q <- "SELECT * FROM 'lines' WHERE (`highway` IN ('NA'))"
+
+# 2. Define the vectortranslate options
+# highways k:v https://wiki.openstreetmap.org/wiki/Key:highway#Roads
+# single quotes: https://stackoverflow.com/a/71738945
+my_vectortranslate = c(
+  # SQL-like query where we select only the features where highway in (primary, secondary, tertiary)
+  "-select", "osm_id, highway",
+  "-where", "highway IN ('living_street','path','pedestrian','primary','primary_link','residential','secondary','secondary_link','service','tertiary','tertiary_link','trunk','trunk_link')"
+)
+
+hosm <- oe_get(cpsf[3,], boundary = b_list[[3]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc")
+
+hosmsf <- st_read(hosm)
+
+hosmsf %>%
+  filter(st_is(geometry, c("MULTILINESTRING","LINESTRING"))) %>%
+  st_cast("LINESTRING") %>%
+  #st_transform(3857) %>%
+  select(highway) %>%
+  # plot() %>%
+  as_sfnetwork() %>%
+  activate("edges") %>%
+  convert(to_spatial_subdivision) %>%
+  mutate(heading = edge_azimuth(),
+         heading = units::set_units(heading, "degrees"),
+         heading = as.numeric(heading),
+         heading = case_when(heading < 0 ~ heading + 360,
+                             TRUE ~ heading),
+         heading = round(heading, 2)) %>%
+  st_as_sf(., "edges") -> hosmsfhead
+
+
+hosmsfhead %>%
+  mutate(hcol = case_when(heading > 90 & heading <= 180 ~ heading - 90,
+                          heading > 180 & heading <= 270 ~ heading - 180,
+                          heading > 270 & heading <= 360 ~ heading - 270,
+                          TRUE ~ heading),
+         hcolr = round(hcol, 0),
+         hcolr = as.factor(hcolr)) %>%
+  st_transform(3857) %>%
+  ggplot() +
+  geom_sf(aes(col = hcolr), size = 0.4, show.legend = FALSE) +
+  scale_colour_manual(values = c(colorRampPalette(brewer.pal(12, "Paired"))(92))) +
+  labs(title = cpsf$name[3]) +
+  theme_void() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+cpsf$name[3]
+```
+
+
+```{r}
+lgeof %>%
+  st_transform(27700) %>%
+  filter(!is.na(highway)) %>%
+  select(1) %>%
+  plot()
+
+hosmsf <- st_read(hosm) %>%
+  st_transform(27700) %>%
+  select(highway) %>%
+  plot()
+
+its_details = oe_match("ITS Leeds")
+```
+
+```{r}
+oe_download(
+  file_url = its_details$url, 
+  file_size = its_details$file_size,
+  provider = "test",
+  download_directory = subDir
+)
+
+st_layers("osm-data/test_its-example.osm.pbf", do_count = TRUE)
+
+oe_get_keys("osm-data/test_its-example.osm.pbf", layer = "lines")
+```
+
+
+```{r}
+# clip a sample area
+d <- 3000
+# create point # http://bboxfinder.com/#51.521781,-0.126142,51.521781,-0.126142
+point <- tibble(geometry = "POINT (530101.0040 181975.6229)") %>%
+  st_as_sf(wkt = "geometry")
+# create square polygon
+point %>%
+  st_buffer(d) %>%
+  st_bbox() %>%
+  st_as_sfc() -> sbox
+# boundary
+sbox %>%
+  st_set_crs(27700) -> sbox
+# place
+london = sf::st_sfc(sf::st_point(c(530101.0040, 181975.6229)), crs = 27700)
+```
+
+Download lines  
+ref: https://docs.ropensci.org/osmextract/reference/oe_get.html  
+```{r}
+lon_lines <- oe_get(place = london, boundary = sbox, stringsAsFactors = FALSE, quiet = TRUE) # lines are downloaded by default # test: boundary_type = "clipsrc"
+```
+
+```{r}
+q <- "SELECT * FROM 'multipolygons' WHERE building IS NOT NULL"
+lon_building <- oe_get(place = london, boundary = sbox, query = q, stringsAsFactors = FALSE, quiet = TRUE)
+
+ql <- "SELECT * FROM 'lines' WHERE highway IS NOT NULL"
+lql <- oe_get(place = cpsf[2,], boundary = sbox, query = ql, stringsAsFactors = FALSE, quiet = TRUE)
+```
+
+```{r}
+lql %>%
+  select(1) %>%
+  plot()
+```
+
+
+```{r}
+lon_building %>%
+  select(1) %>%
+  plot()
+```
+
+
+```{r}
+ffoot <- c('footway', 'sidewalk')
+foot <- lon_lines[lon_lines$highway %in% ffoot,]
+plot(foot["highway"])
+```
+
+```{r}
+lon_lines %>%
+  filter(!is.na(highway)) %>%
+  select(1:3) %>%
+  as_sfnetwork() %>%
+  activate("edges") %>%
+  mutate(heading = edge_azimuth(),
+         heading = units::set_units(heading, "degrees"),
+         heading = as.numeric(heading),
+         heading = case_when(heading < 0 ~ heading + 360,
+                             TRUE ~ heading),
+         heading = round(heading, 2)) %>%
+  st_as_sf(., "edges") -> lonh
+```
+
+```{r}
+# Function for plotting colors side-by-side
+plotpal <- function(col, border = "light gray", ...){
+  n <- length(col)
+  plot(0, 0, type="n", xlim = c(0, 1), ylim = c(0, 1),
+       axes = FALSE, xlab = "", ylab = "", ..., asp = 1/8, mar = c(0,0))
+  rect(0:(n-1)/n, 0, 1:n/n, 1, col = col, border = NA, lwd=0.01) # border = border (for light grey border)
+}
+```
+
+```{r}
+two <- c('#1f306e', '#553772', '#8f3b76', '#c7417b', '#f5487f')
+mycols <-  rev(c("#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00"))
+colorRampPalette(two)(180)
+```
+
+```{r}
+plotpal(colorRampPalette(two)(10))
+plotpal(colorRampPalette(c("#ffbe0b","#fb5607","#ff006e","#8338ec","#3a86ff"))(180))
+```
+
+```{r}
+c(colorRampPalette(mycols)(180),colorRampPalette(mycols)(180))
+```
+
+```{r}
+carto_pal(12, "Bold")
+```
+
+```{r}
+plotpal(carto_pal(12, "Bold"))
+```
+
+
+```{r}
+plotpal(c(colorRampPalette(mycols)(180),colorRampPalette(mycols)(180)))
+```
+
+
+```{r}
+lonh %>%
+  mutate(hcol = case_when(heading > 90 & heading < 180 ~ heading - 90,
+                          heading > 180 & heading < 270 ~ heading - 180,
+                          heading > 270 & heading < 360 ~ heading - 270,
+                          TRUE ~ heading)) %>%
+  mutate(cut = cut_number(hcol, n = 90)) %>%
+  st_transform(27700) %>%
+  st_crop(.,sbox) %>%
+  #sample_n(5000) %>%
+  ggplot() +
+  geom_sf(aes(col = cut), size = 0.4, show.legend = FALSE) +
+  scale_colour_manual(values = c(colorRampPalette(carto_pal(12, "Bold"))(90))) +
+  theme_void()
+```
+
+```{r}
+lon_lines %>%
+  ggplot() +
+  geom_sf() +
+  theme_void()
+```
+
+
+
+
+### Comparing size and form for understanding urban space
+ 
+Comparing things is a natural first step for categorising. And categorising by size and shape enhances the understanding of the spatial environments we live in while enabling its exploration. As such, identifying, naming and classifying is a fundamental tool in science[^1]. In urban planning and design practice is quite common to refer to the dimension and shape of urban landmarks and patterns to obtain orientation. For instance, in the speculative redevelopment of a 50-acre-site the researchers compare the proposed 'urban rooms' with open spaces in the Bloomsbury area of London [^2].
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Speculative drawings for urban redevelopment (2)"}
+#| column: page
+knitr::include_graphics("img/spec.png")
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Figure-ground representation of Russel Sq vs Red Lion Sq"}
+knitr::include_graphics("img/rsq-rlsq.png")
+```
+
+Moreover, the large availability of urban data has encouraged quantitative research for the classification of cities[^3]. 
+
+```{r echo = FALSE, out.width = '100%', fig.cap="A classification of cities based on block size and shape (3)"}
+knitr::include_graphics("img/a-typo.png")
+```
+
+Cities are complex entities which understanding is facilitated by urban structure representations at multiple scales. With the purpose of visually exploring places in any location across the world, the [size & form](https://npalomin.shinyapps.io/size-form/) webapp allows the comparison side-by-side at multiple levels of detail and layers of information. How does the Barcelona block compares to the Manhattan block?, Is Hyde Park bigger than Central Park, London than New York?, How big is `x` in relation to `y`?
+
+[^1]: See Wellcome Collection's [Animal. Vegetable. Mineral](https://www.itsnicethat.com/articles/animal-vegetable-mineral-wellcome-collection-making-nature-281016)
+
+[^2]: Speculations in _Urban Space and Structures_, Martin, L., Martin, L. A., & March, L. (Eds.). (1972).  Cambridge University Press.
+
+[^3]: See [A typology of street patterns](https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2014.0924)
+
+### The interactive maps
+
+The webapp is built in R using `shiny`, and `leaflet` with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen[^4]). To compare between __any__ place worldwide, the `lat,lng` pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from [Google Maps](https://support.google.com/maps/answer/18539?hl=en-GB&co=GENIE.Platform%3DDesktop). Then, the level of zoom has to be set (e.g. 19 for a scale of ~ 1:1000). To enhance the visual exploration the interactive maps have typical navigational functionalities of zoom (synchronised for both panels) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.
+
+```{r echo = FALSE, out.width = '100%', fig.cap="size & form app interaction with the Piazza Navona vs El Zocalo example"}
+knitr::include_graphics("img/size&form.gif")
+```
+
+[^4]: See OSM [article](https://wiki.openstreetmap.org/wiki/Zoom_levels)
+
+### Data layers
+
+The layers described in the table and visualised below can support the complex and multidimensional nature of planning and design tasks than consider the examination of size, grain, urban fabric, urban functions, street pattern, urban footprint and population density.
+
+```{r}
+#| echo: false
+#| message: false
+#| warning: false
+#| tbl-cap: "Comparing places"
+
+# https://github.com/npalomin/formatlas/tree/main/shiny
+library(dplyr)
+library(kableExtra)
+
+suta <- data.frame("Place 1" = c("41.3864, 2.1584","-34.6039,-58.3973", "48.8803,2.3552", "45.4377,12.3340","51.2725,3.6309", "48.3662,13.1379"), 
+                   "Place 2" = c("40.7590, -73.9873","2.0502,45.3220", "-23.5616,-46.6561", "22.3152,114.1664", "24.2001,113.3178", "25.9953,93.5242"),
+                   "Zoom level" = c("18", "16", "18", "17", "8", "4"),
+                   "Data Layer" = c("satellite", "streets", "OSM", "buildings", "At night", "Density"),
+                   "Description" = c("Barcelona's vs Manhattan's block", "Buenos Aires' vs Mogadishu's (Somalia) grids", "Paris Gare du Nord vs Av Paulista SP", "Venice vs Hong Kong building footprints",
+                                     "Benelux vs Pearl River Delta regions", "Density in EU-NorthAfrica vs India-China"))
+
+head(suta) %>%
+  kbl(col.names = c("Place 1", "Place 2","Zoom level", "Data layer", "Description")) %>%
+  kable_paper("hover", full_width = F)
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Barcelona's vs Manhattan's block"}
+knitr::include_graphics("img/bcn-nyc.png")
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Buenos Aires' vs Mogadishu's (Somalia) grids"}
+knitr::include_graphics("img/bsas-mog.png")
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Paris Gare du Nord vs Av Paulista SP"}
+knitr::include_graphics("img/gare-sp.png")
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Venice vs Hong Kong building footprints"}
+knitr::include_graphics("img/ven-hk.png")
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Benelux vs Pearl River Delta regions"}
+knitr::include_graphics("img/ben-prd.png")
+```
+
+```{r echo = FALSE, out.width = '100%', fig.cap="Density in EU-NorthAfrica vs India-China"}
+knitr::include_graphics("img/eu-ich.png")
+```
+
+### Layers sources
+
+- [satellite](http://leaflet-extras.github.io/leaflet-providers/preview/index.html#filter=Esri.WorldImagery)
+- [streets (OSM)](https://api.mapbox.com/styles/v1/npalomin/cl470svwa001c14pk32hwdp8w.html?title=view&access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g&zoomwheel=true&fresh=true#11.22/51.5154/-0.1146)
+- [OSM](https://leaflet-extras.github.io/leaflet-providers/preview/#filter=OpenStreetMap.Mapnik)
+- [buildings (OSM)](https://api.mapbox.com/styles/v1/npalomin/cl472rxun002g15p63h8wjmmv.html?title=view&access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g&zoomwheel=true&fresh=true#15.67/37.755238/-122.434872)
+- [at night](http://leaflet-extras.github.io/leaflet-providers/preview/index.html#filter=NASAGIBS.ViirsEarthAtNight2012)
+- [density](https://sedac.ciesin.columbia.edu/maps/services#Gridded%20Population%20of%20the%20World)
+
+
