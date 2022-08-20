@@ -32,7 +32,7 @@ library(sfnetworks)
 library(tidygraph)
 library(ggplot2)
 library(extrafont)
-library(patchwork)
+library(cowplot)
 library(osmextract)
 library(geosphere)
 library(RColorBrewer)
@@ -43,7 +43,7 @@ library(rcartocolor)
 ```{r setup, message=FALSE, warning=FALSE}
 # check/create Output directory
 mainDir <- getwd()
-subDir <- paste0("-osm-data")
+subDir <- paste0("osm-data")
 if (file.exists(subDir)){
     setwd(file.path(mainDir))
 } else {
@@ -138,11 +138,73 @@ if (file.exists(subDir)){
 # highways k:v https://wiki.openstreetmap.org/wiki/Key:highway#Roads
 # single quotes: https://stackoverflow.com/a/71738945
 my_vectortranslate = c(
-  # SQL-like query where we select only the features where highway in (primary, secondary, tertiary)
+  # SQL-like query where we select only the features where highway in (primary, secondary, tertiary, etc)
   "-select", "osm_id, highway",
   "-where", "highway IN ('living_street','path','pedestrian','primary','primary_link','residential','secondary','secondary_link','service','tertiary','tertiary_link','trunk','trunk_link')"
 )
 
+# function to get osm data
+for (o in 1:nrow(cpsf)) {
+  print(b_list[o])
+}
+
+# get osm data function
+ulist <- list()
+hlist <- list()
+for (o in 1:3) {
+
+  oe_get(cpsf[o,], boundary = b_list[[o]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc", max_file_size = Inf) -> ulist[o]
+  
+  st_read(ulist[o]) -> hlist[[o]]
+}
+
+```
+
+```{r}
+for (o in 1:3) {
+  st_read(ulist[o]) -> hlist[[o]]
+}
+
+pall <- list()
+for (s in 1:3) {
+  
+  hlist[[s]] %>%
+    filter(st_is(geometry, c("MULTILINESTRING","LINESTRING"))) %>%
+    st_cast("LINESTRING") %>%
+    select(highway) %>%
+    as_sfnetwork() %>%
+    activate("edges") %>%
+    convert(to_spatial_subdivision) %>%
+    mutate(heading = edge_azimuth(),
+           heading = units::set_units(heading, "degrees"),
+           heading = as.numeric(heading),
+           heading = case_when(heading < 0 ~ heading + 360,
+                               TRUE ~ heading),
+           heading = round(heading, 2)) %>%
+    st_as_sf(., "edges") %>%
+    mutate(hcol = case_when(heading > 90 & heading <= 180 ~ heading - 90,
+                            heading > 180 & heading <= 270 ~ heading - 180,
+                            heading > 270 & heading <= 360 ~ heading - 270,
+                            TRUE ~ heading),
+           hcolr = round(hcol, 0),
+           hcolr = as.factor(hcolr)) %>%
+    st_transform(3857) %>%
+    ggplot() +
+    geom_sf(aes(col = hcolr), size = 0.4, show.legend = FALSE) +
+    scale_colour_manual(values = c(colorRampPalette(brewer.pal(12, "Paired"))(92))) +
+    labs(title = cpsf$name[s]) +
+    theme_void() +
+    theme(plot.title = element_text(hjust = 0.5)) -> pall[[s]]
+}
+```
+
+```{r fig.height=4, fig.width=12}
+plot_grid(plotlist = pall, ncol = 3)
+```
+
+
+```{r}
+# get data from point clipped to boundary & custom query
 hosm <- oe_get(cpsf[3,], boundary = b_list[[3]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc")
 
 hosmsf <- st_read(hosm)
