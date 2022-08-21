@@ -25,6 +25,7 @@ knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
 library(pct)
 library(stplanr)
 library(tidyverse)
+
 library(janitor)
 library(sf)
 library(lwgeom)
@@ -38,18 +39,8 @@ library(geosphere)
 library(RColorBrewer)
 #install.packages("rcartocolor")
 library(rcartocolor)
-```
-
-```{r setup, message=FALSE, warning=FALSE}
-# check/create Output directory
-mainDir <- getwd()
-subDir <- paste0("osm-data")
-if (file.exists(subDir)){
-    setwd(file.path(mainDir))
-} else {
-    dir.create(file.path(mainDir, subDir))
-    setwd(file.path(mainDir))
-}
+install.packages("entropy")
+library(entropy)
 ```
 
 ```{r message=FALSE, warning=FALSE}
@@ -90,7 +81,7 @@ for (p in 1:nrow(df)) {
 ```
 
 ```{r}
-mapview::mapview(b_list[[1]]) + mapview::mapview(b_list[[2]]) + mapview::mapview(b_list[[3]])
+#mapview::mapview(b_list[[31]]) + mapview::mapview(b_list[[32]]) + mapview::mapview(b_list[[33]])
 ```
 
 ```{r}
@@ -106,65 +97,57 @@ if (file.exists(subDir)){
 }
 ```
 
-
-
 ```{r}
 # get data
 # Download the data to osm-data folder.
-
-# cpsf$name[1]
-# 
-# oe_get(cpsf$name[1], boundary = sbox, download_directory = subDir, stringsAsFactors = FALSE, download_only = TRUE, skip_vectortranslate = TRUE, boundary_type = "clipsrc")
-# 
-# oe_get(cpsf$name[1], boundary = sbox, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc")
-# 
-# lgeof <- st_read("/private/var/folders/nw/3_7tcnfd3sd0mzpcjkxljc5h0000gq/T/RtmptwZArl/geofabrik_London.gpkg")
-
-# library(dbplyr)
-# 
-# mf <- memdb_frame(x = 1, y = 2)
-# mf
-# 
-# hosmsf %>%
-#   st_drop_geometry() %>%
-#   memdb_frame() %>%
-#   filter(highway %in% c("NA")) %>%
-#   show_query()
-# 
-# # query
-# q <- "SELECT * FROM 'lines' WHERE (`highway` IN ('NA'))"
-
 # 2. Define the vectortranslate options
 # highways k:v https://wiki.openstreetmap.org/wiki/Key:highway#Roads
 # single quotes: https://stackoverflow.com/a/71738945
 my_vectortranslate = c(
   # SQL-like query where we select only the features where highway in (primary, secondary, tertiary, etc)
-  "-select", "osm_id, highway",
-  "-where", "highway IN ('living_street','path','pedestrian','primary','primary_link','residential','secondary','secondary_link','service','tertiary','tertiary_link','trunk','trunk_link')"
+  "-select", "osm_id, highway, footway",
+  "-where", "highway IN ('living_street','path','pedestrian','footway','primary','primary_link','residential','secondary','secondary_link','service','tertiary','tertiary_link','trunk','trunk_link')"
 )
 
-# function to get osm data
-for (o in 1:nrow(cpsf)) {
-  print(b_list[o])
-}
+# select cities by index
+s_cities <- c(1,2,3,24,25,28,31,35,36,37,38,39)
 
+# for (n in s_cities) {
+#   cpsf$name[n] -> name
+#   print(name)
+# }
+
+# function to get osm data
 # get osm data function
 ulist <- list()
 hlist <- list()
-for (o in 1:3) {
+for (o in s_cities) {
 
-  oe_get(cpsf[o,], boundary = b_list[[o]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc", max_file_size = Inf) -> ulist[o]
+  oe_get(cpsf[o,], boundary = b_list[[o]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc", max_file_size = Inf, extra_tags = c("footway")) -> ulist[o]
   
   st_read(ulist[o]) -> hlist[[o]]
 }
-
 ```
 
-```{r}
-for (o in 1:3) {
-  st_read(ulist[o]) -> hlist[[o]]
-}
 
+
+
+```{r}
+# function to compute Shannon entropy
+# https://rpubs.com/philjet/shannonentropy
+centropy <- function(target) {
+  freq <- table(target)/length(target)
+  # vectorize
+  vec <- as.data.frame(freq)[,2]
+  #drop 0 to avoid NaN resulting from log2
+  vec<-vec[vec>0]
+  #compute entropy
+  -sum(vec * log2(vec))
+}
+```
+
+
+```{r}
 pall <- list()
 for (s in 1:3) {
   
@@ -188,11 +171,15 @@ for (s in 1:3) {
                             TRUE ~ heading),
            hcolr = round(hcol, 0),
            hcolr = as.factor(hcolr)) %>%
-    st_transform(3857) %>%
+    st_transform(3857) -> dff
+  
+  centropy(dff$hcolr) -> centr
+  
+  dff %>%
     ggplot() +
     geom_sf(aes(col = hcolr), size = 0.4, show.legend = FALSE) +
     scale_colour_manual(values = c(colorRampPalette(brewer.pal(12, "Paired"))(92))) +
-    labs(title = cpsf$name[s]) +
+    labs(title = paste0(cpsf$name[s], ", ΔS ", round(centr,2))) +
     theme_void() +
     theme(plot.title = element_text(hjust = 0.5)) -> pall[[s]]
 }
@@ -202,209 +189,11 @@ for (s in 1:3) {
 plot_grid(plotlist = pall, ncol = 3)
 ```
 
-
 ```{r}
-# get data from point clipped to boundary & custom query
-hosm <- oe_get(cpsf[3,], boundary = b_list[[3]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc")
-
-hosmsf <- st_read(hosm)
-
-hosmsf %>%
-  filter(st_is(geometry, c("MULTILINESTRING","LINESTRING"))) %>%
-  st_cast("LINESTRING") %>%
-  #st_transform(3857) %>%
-  select(highway) %>%
-  # plot() %>%
-  as_sfnetwork() %>%
-  activate("edges") %>%
-  convert(to_spatial_subdivision) %>%
-  mutate(heading = edge_azimuth(),
-         heading = units::set_units(heading, "degrees"),
-         heading = as.numeric(heading),
-         heading = case_when(heading < 0 ~ heading + 360,
-                             TRUE ~ heading),
-         heading = round(heading, 2)) %>%
-  st_as_sf(., "edges") -> hosmsfhead
-
-
-hosmsfhead %>%
-  mutate(hcol = case_when(heading > 90 & heading <= 180 ~ heading - 90,
-                          heading > 180 & heading <= 270 ~ heading - 180,
-                          heading > 270 & heading <= 360 ~ heading - 270,
-                          TRUE ~ heading),
-         hcolr = round(hcol, 0),
-         hcolr = as.factor(hcolr)) %>%
-  st_transform(3857) %>%
-  ggplot() +
-  geom_sf(aes(col = hcolr), size = 0.4, show.legend = FALSE) +
-  scale_colour_manual(values = c(colorRampPalette(brewer.pal(12, "Paired"))(92))) +
-  labs(title = cpsf$name[3]) +
-  theme_void() +
-  theme(plot.title = element_text(hjust = 0.5))
-```
-
-```{r}
-cpsf$name[3]
+#ggsave("img/ldn-bcn-par.jpeg",units="in", width=12, height=4, dpi=400)
 ```
 
 
-```{r}
-lgeof %>%
-  st_transform(27700) %>%
-  filter(!is.na(highway)) %>%
-  select(1) %>%
-  plot()
-
-hosmsf <- st_read(hosm) %>%
-  st_transform(27700) %>%
-  select(highway) %>%
-  plot()
-
-its_details = oe_match("ITS Leeds")
-```
-
-```{r}
-oe_download(
-  file_url = its_details$url, 
-  file_size = its_details$file_size,
-  provider = "test",
-  download_directory = subDir
-)
-
-st_layers("osm-data/test_its-example.osm.pbf", do_count = TRUE)
-
-oe_get_keys("osm-data/test_its-example.osm.pbf", layer = "lines")
-```
-
-
-```{r}
-# clip a sample area
-d <- 3000
-# create point # http://bboxfinder.com/#51.521781,-0.126142,51.521781,-0.126142
-point <- tibble(geometry = "POINT (530101.0040 181975.6229)") %>%
-  st_as_sf(wkt = "geometry")
-# create square polygon
-point %>%
-  st_buffer(d) %>%
-  st_bbox() %>%
-  st_as_sfc() -> sbox
-# boundary
-sbox %>%
-  st_set_crs(27700) -> sbox
-# place
-london = sf::st_sfc(sf::st_point(c(530101.0040, 181975.6229)), crs = 27700)
-```
-
-Download lines  
-ref: https://docs.ropensci.org/osmextract/reference/oe_get.html  
-```{r}
-lon_lines <- oe_get(place = london, boundary = sbox, stringsAsFactors = FALSE, quiet = TRUE) # lines are downloaded by default # test: boundary_type = "clipsrc"
-```
-
-```{r}
-q <- "SELECT * FROM 'multipolygons' WHERE building IS NOT NULL"
-lon_building <- oe_get(place = london, boundary = sbox, query = q, stringsAsFactors = FALSE, quiet = TRUE)
-
-ql <- "SELECT * FROM 'lines' WHERE highway IS NOT NULL"
-lql <- oe_get(place = cpsf[2,], boundary = sbox, query = ql, stringsAsFactors = FALSE, quiet = TRUE)
-```
-
-```{r}
-lql %>%
-  select(1) %>%
-  plot()
-```
-
-
-```{r}
-lon_building %>%
-  select(1) %>%
-  plot()
-```
-
-
-```{r}
-ffoot <- c('footway', 'sidewalk')
-foot <- lon_lines[lon_lines$highway %in% ffoot,]
-plot(foot["highway"])
-```
-
-```{r}
-lon_lines %>%
-  filter(!is.na(highway)) %>%
-  select(1:3) %>%
-  as_sfnetwork() %>%
-  activate("edges") %>%
-  mutate(heading = edge_azimuth(),
-         heading = units::set_units(heading, "degrees"),
-         heading = as.numeric(heading),
-         heading = case_when(heading < 0 ~ heading + 360,
-                             TRUE ~ heading),
-         heading = round(heading, 2)) %>%
-  st_as_sf(., "edges") -> lonh
-```
-
-```{r}
-# Function for plotting colors side-by-side
-plotpal <- function(col, border = "light gray", ...){
-  n <- length(col)
-  plot(0, 0, type="n", xlim = c(0, 1), ylim = c(0, 1),
-       axes = FALSE, xlab = "", ylab = "", ..., asp = 1/8, mar = c(0,0))
-  rect(0:(n-1)/n, 0, 1:n/n, 1, col = col, border = NA, lwd=0.01) # border = border (for light grey border)
-}
-```
-
-```{r}
-two <- c('#1f306e', '#553772', '#8f3b76', '#c7417b', '#f5487f')
-mycols <-  rev(c("#3B9AB2", "#78B7C5", "#EBCC2A", "#E1AF00", "#F21A00"))
-colorRampPalette(two)(180)
-```
-
-```{r}
-plotpal(colorRampPalette(two)(10))
-plotpal(colorRampPalette(c("#ffbe0b","#fb5607","#ff006e","#8338ec","#3a86ff"))(180))
-```
-
-```{r}
-c(colorRampPalette(mycols)(180),colorRampPalette(mycols)(180))
-```
-
-```{r}
-carto_pal(12, "Bold")
-```
-
-```{r}
-plotpal(carto_pal(12, "Bold"))
-```
-
-
-```{r}
-plotpal(c(colorRampPalette(mycols)(180),colorRampPalette(mycols)(180)))
-```
-
-
-```{r}
-lonh %>%
-  mutate(hcol = case_when(heading > 90 & heading < 180 ~ heading - 90,
-                          heading > 180 & heading < 270 ~ heading - 180,
-                          heading > 270 & heading < 360 ~ heading - 270,
-                          TRUE ~ heading)) %>%
-  mutate(cut = cut_number(hcol, n = 90)) %>%
-  st_transform(27700) %>%
-  st_crop(.,sbox) %>%
-  #sample_n(5000) %>%
-  ggplot() +
-  geom_sf(aes(col = cut), size = 0.4, show.legend = FALSE) +
-  scale_colour_manual(values = c(colorRampPalette(carto_pal(12, "Bold"))(90))) +
-  theme_void()
-```
-
-```{r}
-lon_lines %>%
-  ggplot() +
-  geom_sf() +
-  theme_void()
-```
 
 
 
