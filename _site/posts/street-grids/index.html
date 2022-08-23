@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-0.9.309">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Nicolas Palominos">
+
+<title>urban data notebook - Street grids</title>
+<style>
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+span.underline{text-decoration: underline;}
+div.column{display: inline-block; vertical-align: top; width: 50%;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+</style>
+
+<script src="../../site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="../../site_libs/quarto-nav/headroom.min.js"></script>
+<script src="../../site_libs/clipboard/clipboard.min.js"></script>
+<meta name="quarto:offset" content="../../">
+<script src="../../site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="../../site_libs/quarto-search/fuse.min.js"></script>
+<script src="../../site_libs/quarto-search/quarto-search.js"></script>
+<link href="../../favicon.ico" rel="icon">
+<script src="../../site_libs/quarto-html/quarto.js"></script>
+<script src="../../site_libs/quarto-html/popper.min.js"></script>
+<script src="../../site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="../../site_libs/quarto-html/anchor.min.js"></script>
+<link href="../../site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link id="quarto-text-highlighting-styles" href="../../site_libs/quarto-html/quarto-syntax-highlighting.css" rel="stylesheet">
+<script src="../../site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="../../site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="../../site_libs/bootstrap/bootstrap.min.css" rel="stylesheet">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 20,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit"
+  }
+}</script>
+
+
+<link rel="stylesheet" href="../../styles.css">
+<meta name="twitter:title" content="urban data notebook - Street grids">
+<meta name="twitter:image" content="img/cover.png">
+<meta name="twitter:creator" content="@npalomin">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="floating nav-fixed">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg navbar-dark ">
+      <div class="navbar-container container-fluid">
+      <a class="navbar-brand" href="../../index.html">
+    <span class="navbar-title">urban data notebook</span>
+  </a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarCollapse" aria-controls="navbarCollapse" aria-expanded="false" aria-label="Toggle navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+  <span class="navbar-toggler-icon"></span>
+</button>
+          <div class="collapse navbar-collapse" id="navbarCollapse">
+            <ul class="navbar-nav navbar-nav-scroll ms-auto">
+  <li class="nav-item">
+    <a class="nav-link" href="../../about.html">Nicolas Palominos</a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://github.com/npalomin"><i class="bi bi-github" role="img">
+</i> 
+ </a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://twitter.com/npalomin"><i class="bi bi-twitter" role="img">
+</i> 
+ </a>
+  </li>  
+  <li class="nav-item compact">
+    <a class="nav-link" href="https://npalomin.github.io/"><i class="bi bi-person-circle" role="img" aria-label="website">
+</i> 
+ </a>
+  </li>  
+</ul>
+              <div id="quarto-search" class="" title="Search"></div>
+          </div> <!-- /navcollapse -->
+      </div> <!-- /container-fluid -->
+    </nav>
+</header>
+<!-- content -->
+<header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title">Street grids</h1>
+            <p class="subtitle lead"></p><p>Visualising street orientation to explore urban transformation</p><p></p>
+                          <div class="quarto-categories">
+                <div class="quarto-category">r</div>
+                <div class="quarto-category">urban form</div>
+                <div class="quarto-category">grids</div>
+                <div class="quarto-category">osm</div>
+              </div>
+                  </div>
+  </div>
+    
+  
+
+
+
+  <div class="quarto-title-meta">
+
+      <div>
+      <div class="quarto-title-meta-heading">Author</div>
+      <div class="quarto-title-meta-contents">
+               <p>Nicolas Palominos </p>
+            </div>
+    </div>
+      
+      <div>
+      <div class="quarto-title-meta-heading">Published</div>
+      <div class="quarto-title-meta-contents">
+        <p class="date">August, 2022</p>
+      </div>
+    </div>
+      
+    </div>
+    
+  
+  </header><div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse sidebar-navigation floating overflow-auto">
+    <nav id="TOC" role="doc-toc">
+    <h2 id="toc-title">Contents</h2>
+   
+  <ul>
+  <li><a href="#the-grid-as-generator" id="toc-the-grid-as-generator" class="nav-link active" data-scroll-target="#the-grid-as-generator">The grid as generator</a></li>
+  <li><a href="#the-transformation-of-street-grids" id="toc-the-transformation-of-street-grids" class="nav-link" data-scroll-target="#the-transformation-of-street-grids">The transformation of street grids</a></li>
+  <li><a href="#grids-and-transport-accessibility" id="toc-grids-and-transport-accessibility" class="nav-link" data-scroll-target="#grids-and-transport-accessibility">Grids and transport accessibility</a></li>
+  <li><a href="#visualising-street-grids-at-scale" id="toc-visualising-street-grids-at-scale" class="nav-link" data-scroll-target="#visualising-street-grids-at-scale">Visualising street grids at scale</a></li>
+  </ul>
+</nav>
+</nav>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+    </div>
+<!-- main -->
+<main class="content quarto-banner-title-block page-columns page-full" id="quarto-document-content">
+
+
+
+
+<!--------------- post ----------------->
+<div class="cell">
+
+</div>
+<section id="the-grid-as-generator" class="level3">
+<h3 class="anchored" data-anchor-id="the-grid-as-generator">The grid as generator</h3>
+<p>‘Either because the street grid evolved from bottom-up processes in primitive villages or originated from top-down urban planning, the layout of streets sets out the rules that provide a fundamental spatial structure of urban form and its evolution’. ‘From a historical perspective, the first planned street pattern was the chess-board grid. As early as 2,500 BC, the grid layout originated as a solution to easily, quickly and efficiently establish a workers’ village in the Nile valley (Morris, 1967a).It was further developed by the “father of town planning” –the Greek architect Hippodamus– as a tool to plan the reconstruction of an entire cities (Morris, 1967a, p.843). Later, it was systematised by the Romans as two main cross streets –Cardus and Decumanus– which constituted the basis for laying out legionary camps and the planned provincial cities of the empire’<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a>. Remarkably, the grid as a tool not only is present in South and North American cities attributed to their colonial legacy but also was implemented later in the 1800s as the underlying framework for urban growth in the cases of New York and Barcelona. The influence of the street grid is on both the plot pattern and building arrangements.</p>
+<div class="fig-column quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/grid-ny.png" class="img-fluid figure-img" width="350"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">The evolution of the built form over 3 stages of building intensification over the same original rectangular grid in Manhattan, New York <a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="the-transformation-of-street-grids" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="the-transformation-of-street-grids">The transformation of street grids</h3>
+<p>The relevance of street grids as a key urban structuring framework today relies on the resistance to change that streets grids have given underlying land ownership structures. With few exceptions, in today’s cities it would highly conflicting and controversial to overlay a new grid over the existing given that it would most likely affect private property and buildings. Therefore, projects such as the modern renovation of Paris which superimposed a new structuring framework by creating new streets that modified its medieval structure are less viable.</p>
+<div class="column-page-right quarto-layout-panel">
+<figure class="figure">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/paris-h-1.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Destruction(28k houses) and rebuillding(100k houses) in Paris(detail)</figcaption><p></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/paris-h-2.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Paris, 1789 ovelayed with Haussmann’s boulevards <a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 33.3%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/paris-h-3.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">The costs of renovation (1867)</figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Figure 1: Top-down planning in Paris: structural modifications at a large-scale level</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="grids-and-transport-accessibility" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="grids-and-transport-accessibility">Grids and transport accessibility</h3>
+<p>The resilience of street patterns and the difficulty of large-scale urban renovations that are able to change the structuring framework imposed by the street grid makes the study of them an interesting subject. Particularly, in relation to the development of sustainable future plans. Research has shown that disconnected urban networks are associated with greater vehicle travel, energy use and emissions. A quantitative evaluation of the connectedness of street grids globally allows to identify 8 street-network types from the regular grid to areas with high number of deadends.</p>
+<div class="fig-column quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/types-8.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">8 street-network types organised according to disconnectedness index <a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>From the perspective of public transport provision and walking access to transit stops, a regular grid structure provides less accessibility than a ring-radial grid structure even accounting for different density levels (uniform and pyramidal).</p>
+<div class="fig-column quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/grid-transit.png" class="img-fluid figure-img" width="450"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">5 and 10 minutes accessibility comparison between a regular grid and a ring-radial grid structure <a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>Given the rigidity imposed by existing grids the opportunity for urban and transport interventions that are both sustainable and that improve accessibility can be explored from the identification of latent boulevards or urban corridors in existing street grids. An exercise using shortest-path analysis to connect railway an underground stations identified critical routes or potential ‘boulevards’ that could transform inner London using the existing street grid and without the need of Haussmann-style demolitions but instead by re-allocating streetspace.</p>
+<div class="column-page-right quarto-layout-panel">
+<figure class="figure">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/boul-2.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Critical routes connecting transit stations <a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+<div class="quarto-layout-cell" style="flex-basis: 50.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/boul-1.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Sustainable boulevards network <a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Figure 2: ‘Promenades’ connecting ‘activity nodes’ in inner London (terminology from ‘A Pattern Language’, 1977)</figcaption><p></p>
+</figure>
+</div>
+</section>
+<section id="visualising-street-grids-at-scale" class="level3 page-columns page-full">
+<h3 class="anchored" data-anchor-id="visualising-street-grids-at-scale">Visualising street grids at scale</h3>
+<p>A quite useful way to visualise street grids is using polar histograms of street orientations. This method counts the number of roads segments fall into 360 degres ranges. Later the method was extended adding entropy metrics to account for city’s street’s order and disorder using <a href="https://link.springer.com/article/10.1007/s41109-019-0189-1">OSM data</a>. Furthermore, a couple of interactive tools allow to explore this concept worldwide: a <a href="https://mourner.github.io/road-orientation-map/#14.89/-33.46641/-70.63861">mapbox</a>-based one and a <a href="https://road.tiny-app.net/">javascript</a>-based one.</p>
+<div class="fig-column quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-bottom">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/polar.png" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Polar histograms for visualizing street orientation distributions <a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a></figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>For this visualisation exercise I compare 3 paradigmatic street grids and contrast them with 9 South American cities. I employed the <code>osmnextact</code> and <code>sfnetwork</code> packages in R to download OSM data and measure street orientation. The measure of entropy indicates the amount of information of a given set. Higher entropy (Salvador, Bahia) indicates a more diverse grid assemble according to street orientations and the opposite applies to lower entropy (Montevideo). It is interesting to observe that variations of street grids (changes of colour) not only might denote the influence of geographical features (rivers or hills) but also different periods of urban growth (e.g.&nbsp;gridiron pattern in the historical centres of South American cities). The code developed for this exercise can allow further exploration of street grids at metropolitan scale for neighbourhoods identification (superblocks), street grids concordance with metropolitan scale corridors or at continental scale for the examining the Spanish colonial legacy in Latin American cities.</p>
+<div class="column-page-right quarto-layout-panel">
+<div class="quarto-layout-row quarto-layout-valign-top">
+<div class="quarto-layout-cell" style="flex-basis: 100.0%;justify-content: center;">
+<div class="quarto-figure quarto-figure-center">
+<figure class="figure">
+<p><img src="img/mosaic-12.jpeg" class="img-fluid figure-img"></p>
+<p></p><figcaption aria-hidden="true" class="figure-caption">Street grids study of urban centres © <span class="citation" data-cites="npalomin">@npalomin</span></figcaption><p></p>
+</figure>
+</div>
+</div>
+</div>
+</div>
+
+
+</section>
+
+
+<div id="quarto-appendix" class="default"><section class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1" role="doc-endnote"><p><a href="https://discovery.ucl.ac.uk/id/eprint/10127358/">Rethinking Streets: a study of streetspace allocation metrics and street networks in London</a><a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2" role="doc-endnote"><p>Martin, L. (2000) ‘The grid as generator’, arq: Architectural Research Quarterly, 4(4), pp.&nbsp;309–322. Available at: https://doi.org/10.1017/S1359135500000403.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3" role="doc-endnote"><p>Barthelemy, M. et al.&nbsp;(2013) ‘Self-organization versus top-down planning in the evolution of a city’, Scientific Reports, 3, p.&nbsp;2153. Available at: https://doi.org/10.1038/srep02153.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4" role="doc-endnote"><p>Barrington-Leigh, C. and Millard-Ball, A. (2019) ‘A global assessment of street-network sprawl’, PLOS ONE. Edited by H. Kato, 14(11), p.&nbsp;e0223078. Available at: https://doi.org/10.1371/journal.pone.0223078.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5" role="doc-endnote"><p>Lahoorpoor, B. et al.&nbsp;(2022) ‘Access-oriented design? Disentangling the effect of land use and transport network on accessibility’, Transportation Research Interdisciplinary Perspectives, 13, p.&nbsp;100536. Available at: https://doi.org/10.1016/j.trip.2021.100536.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6" role="doc-endnote"><p>Palominos, N., Smith, D.A. and Griffiths, S. (2021) ‘Identifying and Characterising Active Travel Corridors for London in Response to Covid-19 Using Shortest Path and Streetspace Analysis’, in S.-L. Shaw and D. Sui (eds) Mapping COVID-19 in Space and Time: Understanding the Spatial and Temporal Dynamics of a Global Pandemic. Cham: Springer International Publishing (Human Dynamics in Smart Cities), pp.&nbsp;191–216. Available at: https://doi.org/10.1007/978-3-030-72808-3_10.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7" role="doc-endnote"><p>author<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8" role="doc-endnote"><p><a href="https://vizual-statistix.tumblr.com/post/80468941142/unlike-like-emperor-kuzco-i-was-actually-born"><span class="citation" data-cites="VizualStatistix">@VizualStatistix</span></a><a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section><section class="quarto-appendix-contents"><h2 class="anchored quarto-appendix-heading">Citation</h2><div><div class="quarto-appendix-secondary-label">BibTeX citation:</div><pre class="sourceCode code-with-copy quarto-appendix-bibtex"><code class="sourceCode bibtex">@online{palominos2022,
+  author = {Nicolas Palominos},
+  title = {Street Grids},
+  date = {2022-08},
+  url = {https://nicolaspalominos.netlify.app/posts/street-grids/},
+  langid = {en}
+}
+</code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre><div class="quarto-appendix-secondary-label">For attribution, please cite this work as:</div><div id="ref-palominos2022" class="csl-entry quarto-appendix-citeas" role="doc-biblioentry">
+Nicolas Palominos. 2022. <span>“Street Grids.”</span> August 2022. <a href="https://nicolaspalominos.netlify.app/posts/street-grids/">https://nicolaspalominos.netlify.app/posts/street-grids/</a>.
+</div></div></section></div></main> <!-- /main -->
+<script type="application/javascript">
+window.document.addEventListener("DOMContentLoaded", function (event) {
+  const icon = "";
+  const anchorJS = new window.AnchorJS();
+  anchorJS.options = {
+    placement: 'right',
+    icon: icon
+  };
+  anchorJS.add('.anchored');
+  const clipboard = new window.ClipboardJS('.code-copy-button', {
+    target: function(trigger) {
+      return trigger.previousElementSibling;
+    }
+  });
+  clipboard.on('success', function(e) {
+    // button target
+    const button = e.trigger;
+    // don't keep focus
+    button.blur();
+    // flash "checked"
+    button.classList.add('code-copy-button-checked');
+    var currentTitle = button.getAttribute("title");
+    button.setAttribute("title", "Copied!");
+    setTimeout(function() {
+      button.setAttribute("title", currentTitle);
+      button.classList.remove('code-copy-button-checked');
+    }, 1000);
+    // clear code selection
+    e.clearSelection();
+  });
+  function tippyHover(el, contentFn) {
+    const config = {
+      allowHTML: true,
+      content: contentFn,
+      maxWidth: 500,
+      delay: 100,
+      arrow: false,
+      appendTo: function(el) {
+          return el.parentElement;
+      },
+      interactive: true,
+      interactiveBorder: 10,
+      theme: 'quarto',
+      placement: 'bottom-start'
+    };
+    window.tippy(el, config); 
+  }
+  const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+  for (var i=0; i<noterefs.length; i++) {
+    const ref = noterefs[i];
+    tippyHover(ref, function() {
+      let href = ref.getAttribute('href');
+      try { href = new URL(href).hash; } catch {}
+      const id = href.replace(/^#\/?/, "");
+      const note = window.document.getElementById(id);
+      return note.innerHTML;
+    });
+  }
+  var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+  for (var i=0; i<bibliorefs.length; i++) {
+    const ref = bibliorefs[i];
+    const cites = ref.parentNode.getAttribute('data-cites').split(' ');
+    tippyHover(ref, function() {
+      var popup = window.document.createElement('div');
+      cites.forEach(function(cite) {
+        var citeDiv = window.document.createElement('div');
+        citeDiv.classList.add('hanging-indent');
+        citeDiv.classList.add('csl-entry');
+        var biblioDiv = window.document.getElementById('ref-' + cite);
+        if (biblioDiv) {
+          citeDiv.innerHTML = biblioDiv.innerHTML;
+        }
+        popup.appendChild(citeDiv);
+      });
+      return popup.innerHTML;
+    });
+  }
+});
+</script>
+</div> <!-- /content -->
+
+
+
+</body></html>

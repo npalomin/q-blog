@@ -1,0 +1,217 @@
+## ----setup, message=FALSE, warning=FALSE-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+library(pct)
+library(stplanr)
+library(tidyverse)
+library(janitor)
+library(sf)
+library(lwgeom)
+library(sfnetworks)
+library(tidygraph)
+library(ggplot2)
+library(extrafont)
+library(cowplot)
+library(osmextract)
+library(geosphere)
+library(RColorBrewer)
+#install.packages("rcartocolor")
+library(rcartocolor)
+#install.packages("entropy")
+library(entropy)
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# data directory
+# check/create Output directory
+mainDir <- getwd()
+subDir <- paste0("data")
+if (file.exists(subDir)){
+    setwd(file.path(mainDir))
+} else {
+    dir.create(file.path(mainDir, subDir))
+    setwd(file.path(mainDir))
+}
+
+
+## ----message=FALSE, warning=FALSE------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# get points grom google spreadsheet
+path <- 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRywtZWBYrE0mtCEjsanD_IswTid2v8AoOT0D7RerV8G7tyNMxx0GvbVM6E8zH9tYkFzxaRRSczkIPv/pub?gid=0&single=true&output=csv'
+cp <- read_csv(path)
+
+# convert points to sf objects
+cp %>%
+  mutate(lat = str_split_fixed(cp$latlng, ",", 2)[,1],
+         lng = str_split_fixed(cp$latlng, ",", 2)[,2],
+         lat = as.numeric(lat),
+         lng = as.numeric(lng),
+         name = str_to_title(name)) %>%
+  rowwise() %>%
+  mutate(geometry = list(st_point(c(lng,lat)))) %>%
+  st_as_sf() %>%
+  st_set_crs(4326) -> cpsf
+
+#mapview::mapview(cpsf)
+
+# function to convert sf points to bboxes
+# define dataframe
+df <- cpsf
+# define keys
+# df <- df %>%
+#   filter(name %in% c("barcelona","london"))
+
+# define buffer distance
+d <- 5000
+
+b_list <- list()
+for (p in 1:nrow(df)) {
+  
+  df[p,] %>%
+    st_transform(3857) %>%
+    st_buffer(.,d) %>%
+    st_bbox() %>%
+    st_as_sfc() %>%
+    st_sf() %>% 
+    mutate(name = cpsf$name[p]) -> b_list[[p]]
+}
+
+# flatten list of sf
+do.call(rbind, b_list) -> bboxes
+
+#mapview::mapview(bboxes)
+
+#st_write(bboxes, "data/bboxes.gpkg", append=FALSE)
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# get data
+# Download the data to osm-data folder.
+# 2. Define the vectortranslate options
+# highways k:v https://wiki.openstreetmap.org/wiki/Key:highway#Roads
+# single quotes: https://stackoverflow.com/a/71738945
+my_vectortranslate = c(
+  # SQL-like query where we select only the features where highway in (primary, secondary, tertiary, etc)
+  "-select", "osm_id, highway, footway",
+  "-where", "highway IN ('living_street','path','pedestrian','footway','primary','primary_link','residential','secondary','secondary_link','service','tertiary','tertiary_link','trunk','trunk_link')"
+)
+
+# select cities by index
+s_cities <- c(1,2,3,24,25,28,31,35,36,37,38,39)
+#s_cities <- c(1,2,3)
+
+# for (n in s_cities) {
+#   cpsf$name[n] -> name
+#   print(name)
+# }
+
+# function to get osm data
+# get osm data function
+ulist <- list()
+hlist <- list()
+for (o in s_cities) {
+
+  oe_get(cpsf[o,], boundary = b_list[[o]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc", max_file_size = Inf, extra_tags = c("footway")) -> ulist[o]
+  
+  st_read(ulist[o]) -> hlist[[o]]
+}
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# function to compute Shannon entropy
+# https://rpubs.com/philjet/shannonentropy
+centropy <- function(target) {
+  freq <- table(target)/length(target)
+  # vectorize
+  vec <- as.data.frame(freq)[,2]
+  #drop 0 to avoid NaN resulting from log2
+  vec<-vec[vec>0]
+  #compute entropy
+  -sum(vec * log2(vec))
+}
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# store entropy values
+centr <- tibble(name = cpsf$name[s_cities],
+                entropy = 1:length(s_cities))
+# store plots
+pall <- list()
+# store sf
+dff <- list()
+
+for (s in s_cities) {
+  
+  hlist[[s]] %>%
+    filter(st_is(geometry, c("MULTILINESTRING","LINESTRING"))) %>%
+    st_cast("LINESTRING") %>%
+    filter(is.na(footway)|footway != "sidewalk") %>%
+    select(highway) %>%
+    as_sfnetwork() %>%
+    activate("edges") %>%
+    convert(to_spatial_subdivision) %>%
+    mutate(heading = edge_azimuth(),
+           heading = units::set_units(heading, "degrees"),
+           heading = as.numeric(heading),
+           heading = case_when(heading < 0 ~ heading + 360,
+                               TRUE ~ heading),
+           heading = round(heading, 2)) %>%
+    st_as_sf(., "edges") %>%
+    mutate(hcol = case_when(heading > 90 & heading <= 180 ~ heading - 90,
+                            heading > 180 & heading <= 270 ~ heading - 180,
+                            heading > 270 & heading <= 360 ~ heading - 270,
+                            TRUE ~ heading),
+           hcolr = round(hcol, 0),
+           hcolr = as.factor(hcolr)) %>%
+    st_transform(3857) -> dff[[s]]
+}
+
+for (s in 1:length(s_cities)) {
+  # remove NULL from list
+  dff[lengths(dff) != 0] -> dff
+  
+  centropy(dff[[s]]$hcolr) -> centr$entropy[s]
+  
+  dff[[s]] %>%
+    ggplot() +
+    geom_sf(aes(col = hcolr), size = 0.4, show.legend = FALSE) +
+    geom_sf(data = bboxes[s_cities,][s,], col = "white", fill = NA) +
+    scale_colour_manual(values = c(colorRampPalette(brewer.pal(12, "Paired"))(92))) +
+    labs(title = paste0(cpsf$name[s_cities][s], ", ΔS ", sprintf('%.2f',centr$entropy[s]))) +
+    theme_void() +
+    theme(plot.title = element_text(hjust = 0.5)) +
+    coord_sf(expand = FALSE) -> pall[[s]]
+}
+
+
+## ----fig.height=16, fig.width=12-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+plot_grid(plotlist = pall, ncol = 3)
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+ggsave("img/mosaic-12.jpeg",units="in", width=12, height=16, dpi=400)
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# write csv of sf data from osm
+for (g in 1:length(hlist)) {
+  
+  st_write(hlist[[g]], paste0(mainDir, "/", subDir, "/", cpsf$name[g], "-osm.csv"), layer_options = c("GEOMETRY=AS_WKT","CREATE_CSVT=YES"), delete_dsn=TRUE)
+}
+
+# save list of sf with orientation
+saveRDS(dff, file = paste0(mainDir,"/", subDir, "/","orientation-list.RData"))
+
+# write csv
+write_csv(centr, file = paste0(mainDir,"/", subDir, "/","cities-entropy-stats.csv"))
+
+# save list of plots
+saveRDS(pall, file = paste0(mainDir,"/", subDir, "/","plot-list.RData"))
+
+# # read RDS
+# tp <- readRDS("data/plot-list.RData")
+
+
+## --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+# https://www.rstudio.com/blog/r-markdown-tips-and-tricks-3-time-savers/
+# Convert an R Markdown document into an R script
+knitr::purl()
+

@@ -1,7 +1,7 @@
 ---
 title: "Street grids"
 subtitle: |
-  Visualising neighbourhoods from street orientation
+  Visualising street orientation to explore urban transformation
 author:
   name: Nicolas Palominos
 citation:
@@ -9,7 +9,7 @@ citation:
 date: "2022-08"
 date-format: "MMMM, YYYY"
 categories: [r, urban form, grids, osm]
-image: "img/bcn-nyc.png"
+image: "img/cover.png"
 format: 
   html:
     code-fold: true
@@ -20,315 +20,98 @@ format:
 
 <!--------------- post ----------------->
 
-```{r setup, message=FALSE, warning=FALSE}
+```{r setup, echo = FALSE, message=FALSE, warning=FALSE}
 knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
-library(pct)
-library(stplanr)
 library(tidyverse)
 library(janitor)
 library(sf)
-library(lwgeom)
-library(sfnetworks)
-library(tidygraph)
-library(ggplot2)
-library(extrafont)
-library(cowplot)
-library(osmextract)
-library(geosphere)
-library(RColorBrewer)
-#install.packages("rcartocolor")
-library(rcartocolor)
-install.packages("entropy")
-library(entropy)
 ```
 
-```{r}
-# data directory
-# check/create Output directory
-mainDir <- getwd()
-subDir <- paste0("data")
-if (file.exists(subDir)){
-    setwd(file.path(mainDir))
-} else {
-    dir.create(file.path(mainDir, subDir))
-    setwd(file.path(mainDir))
-}
-```
-
-```{r message=FALSE, warning=FALSE}
-# get points grom google spreadsheet
-path <- 'https://docs.google.com/spreadsheets/d/e/2PACX-1vRywtZWBYrE0mtCEjsanD_IswTid2v8AoOT0D7RerV8G7tyNMxx0GvbVM6E8zH9tYkFzxaRRSczkIPv/pub?gid=0&single=true&output=csv'
-cp <- read_csv(path)
-
-# convert points to sf objects
-cp %>%
-  mutate(lat = str_split_fixed(cp$latlng, ",", 2)[,1],
-         lng = str_split_fixed(cp$latlng, ",", 2)[,2],
-         lat = as.numeric(lat),
-         lng = as.numeric(lng),
-         name = str_to_title(name)) %>%
-  rowwise() %>%
-  mutate(geometry = list(st_point(c(lng,lat)))) %>%
-  st_as_sf() %>%
-  st_set_crs(4326) -> cpsf
-
-#mapview::mapview(cpsf)
-
-# function to convert sf points to bboxes
-# define dataframe
-df <- cpsf
-# define keys
-# df <- df %>%
-#   filter(name %in% c("barcelona","london"))
-
-# define buffer distance
-d <- 5000
-
-b_list <- list()
-for (p in 1:nrow(df)) {
-  
-  df[p,] %>%
-    st_transform(3857) %>%
-    st_buffer(.,d) %>%
-    st_bbox() %>%
-    st_as_sfc() %>%
-    st_sf() %>% 
-    mutate(name = cpsf$name[p]) -> b_list[[p]]
-}
-
-# flatten list of sf
-do.call(rbind, b_list) -> bboxes
-
-#mapview::mapview(bboxes)
-
-#st_write(bboxes, "data/bboxes.gpkg", append=FALSE)
-```
-
-```{r}
-# get data
-# Download the data to osm-data folder.
-# 2. Define the vectortranslate options
-# highways k:v https://wiki.openstreetmap.org/wiki/Key:highway#Roads
-# single quotes: https://stackoverflow.com/a/71738945
-my_vectortranslate = c(
-  # SQL-like query where we select only the features where highway in (primary, secondary, tertiary, etc)
-  "-select", "osm_id, highway, footway",
-  "-where", "highway IN ('living_street','path','pedestrian','footway','primary','primary_link','residential','secondary','secondary_link','service','tertiary','tertiary_link','trunk','trunk_link')"
-)
-
-# select cities by index
-s_cities <- c(1,2,3,24,25,28,31,35,36,37,38,39)
-#s_cities <- c(1,2,3)
-
-# for (n in s_cities) {
-#   cpsf$name[n] -> name
-#   print(name)
-# }
-
-# function to get osm data
-# get osm data function
-ulist <- list()
-hlist <- list()
-for (o in s_cities) {
-
-  oe_get(cpsf[o,], boundary = b_list[[o]], vectortranslate_options = my_vectortranslate, stringsAsFactors = FALSE, download_only = TRUE, boundary_type = "clipsrc", max_file_size = Inf, extra_tags = c("footway")) -> ulist[o]
-  
-  st_read(ulist[o]) -> hlist[[o]]
-}
-```
-
-```{r}
-# function to compute Shannon entropy
-# https://rpubs.com/philjet/shannonentropy
-centropy <- function(target) {
-  freq <- table(target)/length(target)
-  # vectorize
-  vec <- as.data.frame(freq)[,2]
-  #drop 0 to avoid NaN resulting from log2
-  vec<-vec[vec>0]
-  #compute entropy
-  -sum(vec * log2(vec))
-}
-```
-
-```{r}
-# store entropy values
-centr <- tibble(name = cpsf$name[s_cities],
-                entropy = 1:length(s_cities))
-# store plots
-pall <- list()
-# store sf
-dff <- list()
-
-for (s in s_cities) {
-  
-  hlist[[s]] %>%
-    filter(st_is(geometry, c("MULTILINESTRING","LINESTRING"))) %>%
-    st_cast("LINESTRING") %>%
-    filter(is.na(footway)|footway != "sidewalk") %>%
-    select(highway) %>%
-    as_sfnetwork() %>%
-    activate("edges") %>%
-    convert(to_spatial_subdivision) %>%
-    mutate(heading = edge_azimuth(),
-           heading = units::set_units(heading, "degrees"),
-           heading = as.numeric(heading),
-           heading = case_when(heading < 0 ~ heading + 360,
-                               TRUE ~ heading),
-           heading = round(heading, 2)) %>%
-    st_as_sf(., "edges") %>%
-    mutate(hcol = case_when(heading > 90 & heading <= 180 ~ heading - 90,
-                            heading > 180 & heading <= 270 ~ heading - 180,
-                            heading > 270 & heading <= 360 ~ heading - 270,
-                            TRUE ~ heading),
-           hcolr = round(hcol, 0),
-           hcolr = as.factor(hcolr)) %>%
-    st_transform(3857) -> dff[[s]]
-}
-
-for (s in 1:length(s_cities)) {
-  # remove NULL from list
-  dff[lengths(dff) != 0] -> dff
-  
-  centropy(dff[[s]]$hcolr) -> centr$entropy[s]
-  
-  dff[[s]] %>%
-    ggplot() +
-    geom_sf(aes(col = hcolr), size = 0.4, show.legend = FALSE) +
-    geom_sf(data = bboxes[s_cities,][s,], col = "white", fill = NA) +
-    scale_colour_manual(values = c(colorRampPalette(brewer.pal(12, "Paired"))(92))) +
-    labs(title = paste0(cpsf$name[s_cities][s], ", ΔS ", sprintf('%.2f',centr$entropy[s]))) +
-    theme_void() +
-    theme(plot.title = element_text(hjust = 0.5)) +
-    coord_sf(expand = FALSE) -> pall[[s]]
-}
-```
-
-```{r fig.height=16, fig.width=12}
-plot_grid(plotlist = pall, ncol = 3)
-```
-
-```{r}
-ggsave("img/mosaic-12.jpeg",units="in", width=12, height=16, dpi=400)
-```
-
-```{r}
-# write csv of sf data from osm
-for (g in 1:length(hlist)) {
-  
-  st_write(hlist[[g]], paste0(mainDir, "/", subDir, "/", cpsf$name[g], "-osm.csv"), layer_options = c("GEOMETRY=AS_WKT","CREATE_CSVT=YES"), delete_dsn=TRUE)
-}
-
-# save list of sf with orientation
-saveRDS(dff, file = paste0(mainDir,"/", subDir, "/","orientation-list.RData"))
-
-# write csv
-write_csv(centr, file = paste0(mainDir,"/", subDir, "/","cities-entropy-stats.csv"))
-
-# save list of plots
-saveRDS(pall, file = paste0(mainDir,"/", subDir, "/","plot-list.RData"))
-
-# # read RDS
-# tp <- readRDS("data/plot-list.RData")
-```
-
-
-
-
-### Comparing size and form for understanding urban space
+### The grid as generator
  
-Comparing things is a natural first step for categorising. And categorising by size and shape enhances the understanding of the spatial environments we live in while enabling its exploration. As such, identifying, naming and classifying is a fundamental tool in science[^1]. In urban planning and design practice is quite common to refer to the dimension and shape of urban landmarks and patterns to obtain orientation. For instance, in the speculative redevelopment of a 50-acre-site the researchers compare the proposed 'urban rooms' with open spaces in the Bloomsbury area of London [^2].
+'Either because the street grid evolved from bottom-up processes in primitive villages or originated from top-down urban planning, the layout of streets sets out the rules that provide a fundamental spatial structure of urban form and its evolution'. 'From a historical perspective, the first planned street pattern was the chess-board grid. As early as 2,500 BC, the grid layout originated as a solution to easily, quickly and efficiently establish a workers' village in the Nile valley (Morris, 1967a).It was further developed by the "father of town planning" --the Greek architect Hippodamus-- as a tool to plan the reconstruction of an entire cities (Morris, 1967a, p.843). Later, it was systematised by the Romans as two main cross streets --Cardus and Decumanus-- which constituted the basis for laying out legionary camps and the planned provincial cities of the empire'[^1]. Remarkably, the grid as a tool not only is present in South and North American cities attributed to their colonial legacy but also was implemented later in the 1800s as the underlying framework for urban growth in the cases of New York and Barcelona. The influence of the street grid is on both the plot pattern and building arrangements.
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Speculative drawings for urban redevelopment (2)"}
-#| column: page
-knitr::include_graphics("img/spec.png")
-```
+:::{.fig-column layout-nrow=1 layout-valign="bottom"}
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Figure-ground representation of Russel Sq vs Red Lion Sq"}
-knitr::include_graphics("img/rsq-rlsq.png")
-```
+![The evolution of the built form over 3 stages of building intensification over the same original rectangular grid in Manhattan, New York [^2]](img/grid-ny.png){width=350px}
 
-Moreover, the large availability of urban data has encouraged quantitative research for the classification of cities[^3]. 
+:::
 
-```{r echo = FALSE, out.width = '100%', fig.cap="A classification of cities based on block size and shape (3)"}
-knitr::include_graphics("img/a-typo.png")
-```
+[^1]: [Rethinking Streets: a study of streetspace allocation metrics and street networks in London](https://discovery.ucl.ac.uk/id/eprint/10127358/)
 
-Cities are complex entities which understanding is facilitated by urban structure representations at multiple scales. With the purpose of visually exploring places in any location across the world, the [size & form](https://npalomin.shinyapps.io/size-form/) webapp allows the comparison side-by-side at multiple levels of detail and layers of information. How does the Barcelona block compares to the Manhattan block?, Is Hyde Park bigger than Central Park, London than New York?, How big is `x` in relation to `y`?
+[^2]: Martin, L. (2000) ‘The grid as generator’, arq: Architectural Research Quarterly, 4(4), pp. 309–322. Available at: https://doi.org/10.1017/S1359135500000403.
 
-[^1]: See Wellcome Collection's [Animal. Vegetable. Mineral](https://www.itsnicethat.com/articles/animal-vegetable-mineral-wellcome-collection-making-nature-281016)
+### The transformation of street grids
 
-[^2]: Speculations in _Urban Space and Structures_, Martin, L., Martin, L. A., & March, L. (Eds.). (1972).  Cambridge University Press.
+The relevance of street grids as a key urban structuring framework today relies on the resistance to change that streets grids have given underlying land ownership structures. With few exceptions, in today's cities it would highly conflicting and controversial to overlay a new grid over the existing given that it would most likely affect private property and buildings. Therefore, projects such as the modern renovation of Paris which superimposed a new structuring framework by creating new streets that modified its medieval structure are less viable.
 
-[^3]: See [A typology of street patterns](https://royalsocietypublishing.org/doi/pdf/10.1098/rsif.2014.0924)
+:::{.column-page-right #fig-paris layout-nrow=1 layout-valign="top"}
+![Destruction(28k houses) and rebuillding(100k houses) in Paris(detail)](img/paris-h-1.png)
 
-### The interactive maps
+![Paris, 1789 ovelayed with Haussmann's boulevards [^3]](img/paris-h-2.png)
 
-The webapp is built in R using `shiny`, and `leaflet` with a simple and minimalist structure in ~100 lines of code. The user is presented with a default view comparing the satellite views of Central London with Central Santiago at a zoom level of 14 (1:35000 ~ scale on screen[^4]). To compare between __any__ place worldwide, the `lat,lng` pair of coordinates in EPSG:4326 decimal degrees notation should be entered in the search box. The pair of coordinates for a place can be easily obtained from [Google Maps](https://support.google.com/maps/answer/18539?hl=en-GB&co=GENIE.Platform%3DDesktop). Then, the level of zoom has to be set (e.g. 19 for a scale of ~ 1:1000). To enhance the visual exploration the interactive maps have typical navigational functionalities of zoom (synchronised for both panels) and pan. Furthermore, a range of spatial layers can be selected for comparisons at different scales and themes.
+![The costs of renovation (1867)](img/paris-h-3.png)
 
-```{r echo = FALSE, out.width = '100%', fig.cap="size & form app interaction with the Piazza Navona vs El Zocalo example"}
-knitr::include_graphics("img/size&form.gif")
-```
+Top-down planning in Paris: structural modifications at a large-scale level 
+:::
 
-[^4]: See OSM [article](https://wiki.openstreetmap.org/wiki/Zoom_levels)
+[^3]: Barthelemy, M. et al. (2013) ‘Self-organization versus top-down planning in the evolution of a city’, Scientific Reports, 3, p. 2153. Available at: https://doi.org/10.1038/srep02153.
 
-### Data layers
+### Grids and transport accessibility
 
-The layers described in the table and visualised below can support the complex and multidimensional nature of planning and design tasks than consider the examination of size, grain, urban fabric, urban functions, street pattern, urban footprint and population density.
+The resilience of street patterns and the difficulty of large-scale urban renovations that are able to change the structuring framework imposed by the street grid makes the study of them an interesting subject. Particularly, in relation to the development of sustainable future plans. Research has shown that disconnected urban networks are associated with greater vehicle travel, energy use and emissions. A quantitative evaluation of the connectedness of street grids globally allows to identify 8 street-network types from the regular grid to areas with high number of deadends.
 
-```{r}
-#| echo: false
-#| message: false
-#| warning: false
-#| tbl-cap: "Comparing places"
+:::{.fig-column layout-nrow=1 layout-valign="bottom"}
 
-# https://github.com/npalomin/formatlas/tree/main/shiny
-library(dplyr)
-library(kableExtra)
+![8 street-network types organised according to disconnectedness index [^4]](img/types-8.png)
 
-suta <- data.frame("Place 1" = c("41.3864, 2.1584","-34.6039,-58.3973", "48.8803,2.3552", "45.4377,12.3340","51.2725,3.6309", "48.3662,13.1379"), 
-                   "Place 2" = c("40.7590, -73.9873","2.0502,45.3220", "-23.5616,-46.6561", "22.3152,114.1664", "24.2001,113.3178", "25.9953,93.5242"),
-                   "Zoom level" = c("18", "16", "18", "17", "8", "4"),
-                   "Data Layer" = c("satellite", "streets", "OSM", "buildings", "At night", "Density"),
-                   "Description" = c("Barcelona's vs Manhattan's block", "Buenos Aires' vs Mogadishu's (Somalia) grids", "Paris Gare du Nord vs Av Paulista SP", "Venice vs Hong Kong building footprints",
-                                     "Benelux vs Pearl River Delta regions", "Density in EU-NorthAfrica vs India-China"))
+:::
 
-head(suta) %>%
-  kbl(col.names = c("Place 1", "Place 2","Zoom level", "Data layer", "Description")) %>%
-  kable_paper("hover", full_width = F)
-```
+[^4]: Barrington-Leigh, C. and Millard-Ball, A. (2019) ‘A global assessment of street-network sprawl’, PLOS ONE. Edited by H. Kato, 14(11), p. e0223078. Available at: https://doi.org/10.1371/journal.pone.0223078.
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Barcelona's vs Manhattan's block"}
-knitr::include_graphics("img/bcn-nyc.png")
-```
+From the perspective of public transport provision and walking access to transit stops, a regular grid structure provides less accessibility than a ring-radial grid structure even accounting for different density levels (uniform and pyramidal).
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Buenos Aires' vs Mogadishu's (Somalia) grids"}
-knitr::include_graphics("img/bsas-mog.png")
-```
+:::{.fig-column layout-nrow=1 layout-valign="bottom"}
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Paris Gare du Nord vs Av Paulista SP"}
-knitr::include_graphics("img/gare-sp.png")
-```
+![5 and 10 minutes accessibility comparison between a regular grid and a ring-radial grid structure [^5]](img/grid-transit.png){width=450px}
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Venice vs Hong Kong building footprints"}
-knitr::include_graphics("img/ven-hk.png")
-```
+:::
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Benelux vs Pearl River Delta regions"}
-knitr::include_graphics("img/ben-prd.png")
-```
+[^5]: Lahoorpoor, B. et al. (2022) ‘Access-oriented design? Disentangling the effect of land use and transport network on accessibility’, Transportation Research Interdisciplinary Perspectives, 13, p. 100536. Available at: https://doi.org/10.1016/j.trip.2021.100536.
 
-```{r echo = FALSE, out.width = '100%', fig.cap="Density in EU-NorthAfrica vs India-China"}
-knitr::include_graphics("img/eu-ich.png")
-```
+Given the rigidity imposed by existing grids the opportunity for urban and transport interventions that are both sustainable and that improve accessibility can be explored from the identification of latent boulevards or urban corridors in  existing street grids. An exercise using shortest-path analysis to connect railway an underground stations identified critical routes or potential 'boulevards' that could transform inner London using the existing street grid and without the need of Haussmann-style demolitions but instead by re-allocating streetspace. 
 
-### Layers sources
+:::{.column-page-right #fig-boul layout-nrow=1 layout-valign="top"}
+![Critical routes connecting transit stations [^6]](img/boul-2.png)
 
-- [satellite](http://leaflet-extras.github.io/leaflet-providers/preview/index.html#filter=Esri.WorldImagery)
-- [streets (OSM)](https://api.mapbox.com/styles/v1/npalomin/cl470svwa001c14pk32hwdp8w.html?title=view&access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g&zoomwheel=true&fresh=true#11.22/51.5154/-0.1146)
-- [OSM](https://leaflet-extras.github.io/leaflet-providers/preview/#filter=OpenStreetMap.Mapnik)
-- [buildings (OSM)](https://api.mapbox.com/styles/v1/npalomin/cl472rxun002g15p63h8wjmmv.html?title=view&access_token=pk.eyJ1IjoibnBhbG9taW4iLCJhIjoiY2owMDF5YXQxMDA2eDMybmwwd2tqYTU3bSJ9.Icvrku6Q57o8L0gncJI89g&zoomwheel=true&fresh=true#15.67/37.755238/-122.434872)
-- [at night](http://leaflet-extras.github.io/leaflet-providers/preview/index.html#filter=NASAGIBS.ViirsEarthAtNight2012)
-- [density](https://sedac.ciesin.columbia.edu/maps/services#Gridded%20Population%20of%20the%20World)
+![Sustainable boulevards network [^7]](img/boul-1.png)
+
+'Promenades' connecting 'activity nodes' in inner London (terminology from 'A Pattern Language', 1977)
+:::
+
+[^6]: Palominos, N., Smith, D.A. and Griffiths, S. (2021) ‘Identifying and Characterising Active Travel Corridors for London in Response to Covid-19 Using Shortest Path and Streetspace Analysis’, in S.-L. Shaw and D. Sui (eds) Mapping COVID-19 in Space and Time: Understanding the Spatial and Temporal Dynamics of a Global Pandemic. Cham: Springer International Publishing (Human Dynamics in Smart Cities), pp. 191–216. Available at: https://doi.org/10.1007/978-3-030-72808-3_10.
+
+[^7]: author
+
+### Visualising street grids at scale
+
+A quite useful way to visualise street grids is using polar histograms of street orientations. This method counts the number of roads segments fall into 360 degres ranges. Later the method was extended adding entropy metrics to account for city's street's order and disorder using [OSM data](https://link.springer.com/article/10.1007/s41109-019-0189-1). Furthermore, a couple of interactive tools allow to explore this concept worldwide: a [mapbox](https://mourner.github.io/road-orientation-map/#14.89/-33.46641/-70.63861)-based one and a [javascript](https://road.tiny-app.net/)-based one.
+
+:::{.fig-column layout-nrow=1 layout-valign="bottom"}
+
+![Polar histograms for visualizing street orientation distributions [^8]](img/polar.png)
+
+:::
+
+[^8]: [@VizualStatistix](https://vizual-statistix.tumblr.com/post/80468941142/unlike-like-emperor-kuzco-i-was-actually-born)
+
+For this visualisation exercise I compare 3 paradigmatic street grids and contrast them with 9 South American cities. I employed the `osmnextact` and `sfnetwork` packages in R to download OSM data and measure street orientation. The measure of entropy indicates the amount of information of a given set. Higher entropy (Salvador, Bahia) indicates a more diverse grid assemble according to street orientations and the opposite applies to lower entropy (Montevideo). It is interesting to observe that variations of street grids (changes of colour) not only might denote the influence of geographical features (rivers or hills) but also different periods of urban growth (e.g. gridiron pattern in the historical centres of South American cities). The code developed for this exercise can allow further exploration of street grids at metropolitan scale for neighbourhoods identification (superblocks), street grids concordance with metropolitan scale corridors or at continental scale for the examining the Spanish colonial legacy in Latin American cities.
+
+:::{.column-page-right layout-nrow=1 layout-valign="top"}
+
+![Street grids study of urban centres © @npalomin](img/mosaic-12.jpeg)
+
+:::
+
 
 
