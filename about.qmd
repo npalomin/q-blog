@@ -20,6 +20,9 @@ about:
     - icon: orcid
       text: Orcid
       href: https://orcid.org/0000-0002-8713-7338
+    - icon: ResearchGate
+      text: ReasearchGate
+      href: https://www.researchgate.net/profile/Nicolas-Palominos  
 ---
 
 **Urban data scientist, city designer, planner, architect and innovator**
